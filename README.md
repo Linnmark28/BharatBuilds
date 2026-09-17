@@ -2,7 +2,6 @@
 
 Nirvasan is a Delhi civic accountability demo that reconciles public infrastructure records with citizen-reported ground reality. It maps ward boundaries, public assets, representatives, responsible officers, fund claims, evidence, and review leads in one interface.
 
-> **Demo data note:** Ward boundaries come from the DataMeet Delhi GeoJSON. The asset registry, officer directory, and social posts are labelled simulated where they are seeded for the hackathon demo.
 
 ## Local Development
 
