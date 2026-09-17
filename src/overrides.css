@@ -1,0 +1,30 @@
+/* Map symbols and laptop-wide layout overrides. */
+.asset-marker { background: transparent; border: 0; }
+.asset-marker span { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #1976d2; border-radius: 8px; background: #050505; color: #fff; font: 700 12px var(--mono); box-shadow: 0 3px 12px rgba(0,0,0,.45); }
+.asset-marker-dead span { border-color: #ff8a22; color: #ff8a22; }
+.asset-marker-unverified span { border-color: #ff8a22; color: #fff; border-style: dashed; }
+.asset-marker-in-progress span { border-color: #fff; color: #fff; border-style: dashed; }
+.asset-marker.selected span { transform: scale(1.2); box-shadow: 0 0 0 4px rgba(25,118,210,.25), 0 3px 12px rgba(0,0,0,.45); }
+.asset-type-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 13px 0 0; color: #fff; opacity: .78; font: 9px var(--mono); }
+.asset-type-legend span { display: flex; align-items: center; gap: 6px; }
+.asset-type-legend b { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #1976d2; border-radius: 5px; color: #fff; font-size: 9px; }
+.legend-dot.progress { background: #fff; }
+.drawer-symbol { color: #1976d2; font: 700 15px var(--mono); }
+.drawer-symbol-dead, .drawer-symbol-unverified { color: #ff8a22; }
+.drawer-symbol-in-progress { color: #fff; }
+
+/* The sidebar consumes 238px, so reduce fixed map minimums on normal laptops. */
+@media (min-width: 761px) and (max-width: 1400px) {
+  .app-shell > main { padding: 38px 24px 52px; }
+  .map-layout { grid-template-columns: 220px minmax(0, 1fr) 310px; }
+  .asset-drawer { padding: 18px 16px; }
+  .drawer-actions { flex-wrap: wrap; }
+  .drawer-actions button { flex: 1 1 120px; }
+}
+@media (min-width: 1401px) {
+  .map-layout { grid-template-columns: 260px minmax(420px, 1fr) 360px; }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .map-layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .asset-drawer { grid-column: 1 / -1; }
+}
