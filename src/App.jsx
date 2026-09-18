@@ -674,6 +674,66 @@ const assets = [
   {
     id: "AST-0641", type: "Water pump", label: "Community pump · Okhla park", ward: "W-064", lat: 28.535, lng: 77.273, status: "working", photos: 3, amount: 395000, expected: "30 Jun 2024", scheme: "MLALAD", confidence: "Verified", narrative: "Three proof photos confirm the community pump operating.", source: "Delhi MLALAD disclosure, row 145 · civic proof #P-544", wardName: "Okhla",
   },
+  {
+    id: "AST-0424",
+    type: "Structure",
+    label: "Ageing residential block · Ring Road service lane",
+    ward: "W-042",
+    lat: 28.568,
+    lng: 77.238,
+    status: "critical",
+    photos: 3,
+    amount: 0,
+    expected: "Re-inspection overdue",
+    scheme: "MCD structural audit",
+    confidence: "High",
+    lastInspection: "12 May 2024",
+    reinspectionDue: "15 Jul 2025",
+    narrative:
+      "This structure was marked for re-inspection 14 months ago; no maintenance record exists since, and 3 citizen photos in the last 60 days show visible structural cracks. No repair or clearance record has been filed.",
+    source: "MCD structural audit register, row 118 · citizen reports #R-1301, #R-1305, #R-1309",
+    wardName: "Lajpat Nagar",
+  },
+  {
+    id: "AST-0564",
+    type: "Structure",
+    label: "Under-construction block flagged for review · Sector 9",
+    ward: "W-056",
+    lat: 28.708,
+    lng: 77.097,
+    status: "critical",
+    photos: 2,
+    amount: 0,
+    expected: "Re-inspection overdue",
+    scheme: "MCD structural audit",
+    confidence: "Medium",
+    lastInspection: "03 Nov 2024",
+    reinspectionDue: "10 Jan 2026",
+    narrative:
+      "Construction continued past the last recorded inspection date. Two recent citizen photos show exposed rebar and no visible safety barricading. No follow-up inspection has been logged since.",
+    source: "MCD structural audit register, row 204 · citizen reports #R-1402, #R-1408",
+    wardName: "Rohini",
+  },
+  {
+    id: "AST-0453",
+    type: "Structure",
+    label: "Multi-storey block under reinforcement · Saket District Centre",
+    ward: "W-045",
+    lat: 28.522,
+    lng: 77.214,
+    status: "in-progress",
+    photos: 4,
+    amount: 0,
+    expected: "Reinforcement in progress",
+    scheme: "MCD structural audit",
+    confidence: "Medium",
+    lastInspection: "22 Aug 2026",
+    reinspectionDue: "22 Feb 2027",
+    narrative:
+      "Following a citizen-flagged crack report, an inspection was logged and reinforcement work is visibly underway in the latest photos. A follow-up inspection is scheduled; ground status is not yet cleared.",
+    source: "MCD structural audit register, row 231 · civic proof #P-611, #P-614",
+    wardName: "Saket",
+  },
 ];
 
 const wardPolygon = [
@@ -686,11 +746,24 @@ const wardPolygon = [
   [28.62, 76.84],
 ];
 const formatMoney = (amount) => `₹${(amount / 100000).toFixed(1)}L`;
+const syncTimestamp = new Date();
+const formattedSyncDate = syncTimestamp.toLocaleDateString("en-GB", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+const formattedSyncTime = syncTimestamp.toLocaleTimeString("en-IN", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Kolkata",
+});
 const statusMeta = {
   dead: { label: "Dead / missing", color: "#ff8a22" },
   working: { label: "Verified working", color: "#1976d2" },
   unverified: { label: "Unverified", color: "#ff8a22" },
   "in-progress": { label: "Work in progress", color: "#fff" },
+  critical: { label: "Flagged · overdue re-inspection", color: "#ff8a22" },
 };
 const wardContacts = (ward) => ({
   representative: `@${ward.rep.toLowerCase().replace(/\s+/g, "_")}_mcd`,
@@ -709,6 +782,7 @@ const markerSymbols = {
   Hydrant: "◉",
   Pothole: "!",
   Divider: "▥",
+  Structure: "⌂",
 };
 const markerIcon = (asset, selected) =>
   divIcon({
@@ -721,7 +795,35 @@ const markerIcon = (asset, selected) =>
 
 const wardPalette = ["#1976d2", "#ff8a22", "#4aa3df", "#f6b35f"];
 const wardAssets = (wardId) => assets.filter((asset) => asset.ward === wardId);
-const wardShape = (wardId, index) => {
+
+// DataMeet's real ward names (Ward_Name) don't always match our monitored
+// locality names 1:1 — this maps ours to theirs where a real boundary exists.
+// Wards left unmapped (e.g. Saket, Dwarka, Connaught Place — NDMC/unlisted
+// areas in this dataset) fall back to the synthetic shape below.
+const realWardNameAliases = {
+  "Lajpat Nagar": "LAJPAT NAGAR",
+  "Greater Kailash": "GREATER KAILASH-I",
+  Kalkaji: "KALKAJI",
+  "Malviya Nagar": "MALVIYA NAGAR",
+  "R K Puram": "R. K. PURAM",
+  "Hauz Khas": "HAUZ KHAS",
+  Munirka: "MUNIRKA",
+  "Vasant Kunj": "VASANTKUNJ",
+  "Karol Bagh": "KAROL BAGH",
+  "Model Town": "MODEL TOWN",
+  Rohini: "ROHINI",
+  Pitampura: "PITAMPURA SOUTH",
+  Janakpuri: "JANAK PURI WEST",
+  Najafgarh: "NAJAFGARH",
+  Shahdara: "SHAHDARA",
+  "Laxmi Nagar": "LAXMI NAGAR",
+  "Mayur Vihar": "MAYUR VIHAR PHASE-I",
+  Okhla: "OKHLA",
+};
+
+const wardShape = (wardId, index, realShapes = {}) => {
+  const ward = wards.find((item) => item.id === wardId);
+  if (ward && realShapes[ward.name]) return realShapes[ward.name];
   const items = wardAssets(wardId);
   const fallback = [28.62 + (index % 5) * 0.035, 77.02 + (index % 6) * 0.055];
   const center = items.length
@@ -740,7 +842,7 @@ const wardShape = (wardId, index) => {
   ];
 };
 
-function WardFocus({ selectedWard }) {
+function WardFocus({ selectedWard, realShapes }) {
   const map = useMap();
   useEffect(() => {
     if (selectedWard === "All wards") {
@@ -749,23 +851,37 @@ function WardFocus({ selectedWard }) {
     }
     const ward = wards.find((item) => item.name === selectedWard);
     if (!ward) return;
-    map.fitBounds(wardShape(ward.id, wards.indexOf(ward)), {
+    map.fitBounds(wardShape(ward.id, wards.indexOf(ward), realShapes), {
       padding: [40, 40],
       maxZoom: 15,
       animate: true,
     });
-  }, [map, selectedWard]);
+  }, [map, selectedWard, realShapes]);
   return null;
 }
 
-function WardDatasetLayer({ setSelectedWard }) {
+function WardDatasetLayer({ setSelectedWard, onRealShapes }) {
   const [data, setData] = useState(null);
   useEffect(() => {
     fetch(sources.wardsGeoJson)
       .then((response) => response.json())
-      .then(setData)
+      .then((geojson) => {
+        setData(geojson);
+        const shapes = {};
+        (geojson.features || []).forEach((feature) => {
+          const realName = (feature.properties?.Ward_Name || "").trim();
+          const matchedWard = Object.entries(realWardNameAliases).find(
+            ([, alias]) => alias === realName,
+          );
+          if (!matchedWard || feature.geometry?.type !== "Polygon") return;
+          shapes[matchedWard[0]] = feature.geometry.coordinates[0].map(
+            ([lng, lat]) => [lat, lng],
+          );
+        });
+        onRealShapes(shapes);
+      })
       .catch(() => setData(null));
-  }, []);
+  }, [onRealShapes]);
   if (!data) return null;
   return (
     <GeoJSON
@@ -779,19 +895,15 @@ function WardDatasetLayer({ setSelectedWard }) {
       })}
       onEachFeature={(feature, layer) => {
         const properties = feature.properties || {};
-        const label =
-          properties.ward_no ||
-          properties.WARD_NO ||
-          properties.ward ||
-          properties.WARD ||
-          "Delhi ward";
-        layer.bindTooltip(`Ward ${label} · DataMeet boundary`, {
+        const realName = (properties.Ward_Name || "").trim();
+        const label = properties.Ward_No || realName || "Delhi ward";
+        layer.bindTooltip(`${realName || `Ward ${label}`} · DataMeet boundary`, {
           sticky: true,
         });
         layer.on({
           click: () => {
             const match = wards.find(
-              (ward) => ward.id.replace("W-", "") === String(label),
+              (ward) => realWardNameAliases[ward.name] === realName,
             );
             if (match) setSelectedWard(match.name);
           },
@@ -819,7 +931,10 @@ function App() {
       ? assets
       : assets.filter((asset) => asset.wardName === selectedWard);
   const currentWard =
-    wards.find((ward) => ward.id === selectedAsset.ward) || wards[0];
+    (selectedWard !== "All wards" &&
+      wards.find((ward) => ward.name === selectedWard)) ||
+    wards.find((ward) => ward.id === selectedAsset.ward) ||
+    wards[0];
   const tabs = [
     { name: "Map", icon: MapPin },
     { name: "Leaderboard", icon: BarChart3 },
@@ -912,7 +1027,7 @@ function App() {
               <span /> LIVE DEMO
             </span>
             <span className="update-time">
-              Last sync 18 Sep 2024 · 09:42 IST
+              Last sync {formattedSyncDate} · {formattedSyncTime} IST
             </span>
           </div>
         </div>
@@ -923,10 +1038,11 @@ function App() {
             setSelectedAsset={setSelectedAsset}
             selectedWard={selectedWard}
             setSelectedWard={setSelectedWard}
+            setActiveTab={setActiveTab}
           />
         )}
         {activeTab === "Leaderboard" && (
-          <Leaderboard setActiveTab={setActiveTab} />
+          <Leaderboard setActiveTab={setActiveTab} setSelectedWard={setSelectedWard} />
         )}
         {activeTab === "Rep Profile" && (
           <Profile
@@ -980,13 +1096,57 @@ function App() {
   );
 }
 
+const statusFilters = [
+  { key: "critical", label: "Flagged / overdue" },
+  { key: "dead", label: "Dead / missing" },
+  { key: "working", label: "Verified working" },
+  { key: "unverified", label: "Unverified" },
+  { key: "in-progress", label: "In progress" },
+];
+
 function MapView({
   assets: mapAssets,
   selectedAsset,
   setSelectedAsset,
   selectedWard,
   setSelectedWard,
+  setActiveTab,
 }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [realWardShapes, setRealWardShapes] = useState({});
+  const [drawerOpen, setDrawerOpen] = useState(true);
+
+  const searchedAssets = mapAssets.filter((asset) => {
+    const q = query.trim().toLowerCase();
+    const matchesQuery =
+      !q ||
+      asset.type.toLowerCase().includes(q) ||
+      asset.label.toLowerCase().includes(q) ||
+      asset.wardName.toLowerCase().includes(q);
+    const matchesStatus = !statusFilter || asset.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
+
+  const selectAsset = (asset) => {
+    setSelectedAsset(asset);
+    setDrawerOpen(true);
+  };
+
+  const focusedWard =
+    selectedWard !== "All wards" && wards.find((ward) => ward.name === selectedWard);
+  const signalUtilizedPct = focusedWard
+    ? Math.round((focusedWard.utilized / focusedWard.funds) * 100)
+    : Math.round(
+        wards.reduce((sum, ward) => sum + (ward.utilized / ward.funds) * 100, 0) /
+          wards.length,
+      );
+  const signalGap = focusedWard
+    ? focusedWard.gap
+    : Math.round(wards.reduce((sum, ward) => sum + ward.gap, 0) / wards.length);
+  const signalVerifiedPct = Math.max(signalUtilizedPct - signalGap, 0);
+
   return (
     <section className="map-layout">
       <aside className="map-sidebar">
@@ -995,13 +1155,21 @@ function MapView({
             <span className="kicker">FIELD OVERVIEW</span>
             <h2>All Delhi zones</h2>
           </div>
-          <button className="icon-button" title="Filter wards">
+          <button
+            className={filterOpen ? "icon-button active" : "icon-button"}
+            title="Filter by asset status"
+            onClick={() => setFilterOpen(!filterOpen)}
+          >
             <SlidersHorizontal size={18} />
           </button>
         </div>
         <div className="search-box">
           <Search size={16} />
-          <input placeholder="Search asset, ward or rep" />
+          <input
+            placeholder="Search asset, ward or rep"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </div>
         <div className="ward-select">
           <Filter size={14} />
@@ -1015,7 +1183,26 @@ function MapView({
             ))}
           </select>
         </div>
+        {filterOpen && (
+          <div className="choice-grid" style={{ flexWrap: "wrap", marginTop: "8px" }}>
+            {statusFilters.map((option) => (
+              <button
+                key={option.key}
+                className={statusFilter === option.key ? "choice active" : "choice"}
+                onClick={() =>
+                  setStatusFilter(statusFilter === option.key ? null : option.key)
+                }
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="legend">
+          <div>
+            <span className="legend-dot critical" /> Flagged / overdue{" "}
+            <b>{mapAssets.filter((a) => a.status === "critical").length}</b>
+          </div>
           <div>
             <span className="legend-dot dead" /> Dead / missing{" "}
             <b>{mapAssets.filter((a) => a.status === "dead").length}</b>
@@ -1035,6 +1222,9 @@ function MapView({
         </div>
         <div className="asset-type-legend">
           <span>
+            <b>⌂</b> Structure
+          </span>
+          <span>
             <b>L</b> Streetlight
           </span>
           <span>
@@ -1052,11 +1242,11 @@ function MapView({
         </div>
         <div className="signal-card">
           <div className="signal-top">
-            <span>WARD INTEGRITY GAP</span>
+            <span>{focusedWard ? `${focusedWard.name.toUpperCase()} INTEGRITY GAP` : "CITYWIDE INTEGRITY GAP"}</span>
             <Info size={14} />
           </div>
           <strong>
-            52<span>pts</span>
+            {signalGap}<span>pts</span>
           </strong>
           <p>Paper utilization vs. photo-verified working assets</p>
           <div className="mini-bars">
@@ -1072,15 +1262,20 @@ function MapView({
             <i />
           </div>
           <div className="signal-foot">
-            <span>92% paper utilized</span>
-            <span>40% verified working</span>
+            <span>{signalUtilizedPct}% paper utilized</span>
+            <span>{signalVerifiedPct}% verified working</span>
           </div>
         </div>
         <div className="asset-list">
           <div className="list-title">
-            RECENT FIELD SIGNALS <span>{mapAssets.length} assets</span>
+            RECENT FIELD SIGNALS <span>{searchedAssets.length} assets</span>
           </div>
-          {mapAssets.slice(0, 6).map((asset) => (
+          {searchedAssets.length === 0 && (
+            <p style={{ color: "#70778a", fontSize: "11px" }}>
+              No assets match this search or filter.
+            </p>
+          )}
+          {searchedAssets.slice(0, 6).map((asset) => (
             <button
               className={
                 selectedAsset.id === asset.id
@@ -1088,7 +1283,7 @@ function MapView({
                   : "asset-row"
               }
               key={asset.id}
-              onClick={() => setSelectedAsset(asset)}
+              onClick={() => selectAsset(asset)}
             >
               <span
                 className="asset-status"
@@ -1109,7 +1304,7 @@ function MapView({
       <div className="map-card">
         <div className="map-overlay top">
           <span>
-            <span className="map-dot" /> Delhi ward layer · 23 demo wards · {mapAssets.length}{" "}
+            <span className="map-dot" /> Delhi ward layer · 23 demo wards · {searchedAssets.length}{" "}
             assets
           </span>
           <span className="map-scale">N ↑</span>
@@ -1143,12 +1338,13 @@ function MapView({
           />
           <WardDatasetLayer
             setSelectedWard={setSelectedWard}
+            onRealShapes={setRealWardShapes}
           />
-          <WardFocus selectedWard={selectedWard} />
+          <WardFocus selectedWard={selectedWard} realShapes={realWardShapes} />
           {wards.map((ward, index) => (
             <Polygon
               key={ward.id}
-              positions={wardShape(ward.id, index)}
+              positions={wardShape(ward.id, index, realWardShapes)}
               pathOptions={{
                 color: ward.name === selectedWard ? "#ff8a22" : wardPalette[index % wardPalette.length],
                 weight: ward.name === selectedWard ? 3 : 1,
@@ -1160,21 +1356,23 @@ function MapView({
                 click: () => {
                   setSelectedWard(ward.name);
                   const firstAsset = wardAssets(ward.id)[0];
-                  if (firstAsset) setSelectedAsset(firstAsset);
+                  if (firstAsset) selectAsset(firstAsset);
                 },
               }}
             >
               <Tooltip sticky>
-                <b>{ward.name}</b> · {ward.zone} zone · {wardAssets(ward.id).length} mapped assets
+                <b>{ward.name}</b> · {ward.zone} zone ·{" "}
+                {realWardShapes[ward.name] ? "verified boundary" : "approximate boundary"} ·{" "}
+                {wardAssets(ward.id).length} mapped assets
               </Tooltip>
             </Polygon>
           ))}
-          {mapAssets.map((asset) => (
+          {searchedAssets.map((asset) => (
             <Marker
               key={asset.id}
               position={[asset.lat, asset.lng]}
               icon={markerIcon(asset, asset.id === selectedAsset.id)}
-              eventHandlers={{ click: () => setSelectedAsset(asset) }}
+              eventHandlers={{ click: () => selectAsset(asset) }}
             >
               <Tooltip direction="top" offset={[0, -12]}>
                 {asset.type} · {statusMeta[asset.status].label}
@@ -1194,26 +1392,52 @@ function MapView({
             <a href={sources.wardsGeoJson} target="_blank" rel="noreferrer">
               raw GeoJSON ↗
             </a>
+            {" "}· {Object.keys(realWardShapes).length}/{wards.length} wards use verified boundaries
           </span>
         </div>
       </div>
       <AssetDrawer
         asset={selectedAsset}
         ward={wards.find((ward) => ward.id === selectedAsset.ward) || wards[0]}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onViewProfile={() => setActiveTab("Rep Profile")}
+        onAddProof={() => setActiveTab("Civic Proof")}
       />
     </section>
   );
 }
 
-function AssetDrawer({ asset, ward }) {
+function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) {
   const contacts = wardContacts(ward);
+  const repInitials = ward.rep.split(" ").map((part) => part[0]).join("");
+  const officerInitials = ward.officer.split(" ").filter((part) => part.length > 1 || /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
+  const isStructure = asset.type === "Structure";
+  const daysOverdue = isStructure
+    ? Math.floor((syncTimestamp - new Date(asset.reinspectionDue)) / 86400000)
+    : null;
+  if (!open) {
+    return (
+      <aside className="asset-drawer">
+        <div className="drawer-top">
+          <span className="sim-badge">
+            <span /> SIMULATED ASSET REGISTRY
+          </span>
+        </div>
+        <p style={{ color: "#70778a", fontSize: "12px", marginTop: "20px" }}>
+          No asset selected. Click a marker or a field signal on the left to
+          see its accountability chain.
+        </p>
+      </aside>
+    );
+  }
   return (
     <aside className="asset-drawer">
       <div className="drawer-top">
         <span className="sim-badge">
           <span /> SIMULATED ASSET REGISTRY
         </span>
-        <button className="icon-button" title="Close detail">
+        <button className="icon-button" title="Close detail" onClick={onClose}>
           <X size={17} />
         </button>
       </div>
@@ -1246,22 +1470,45 @@ function AssetDrawer({ asset, ward }) {
         </span>
       </div>
       <div className="drawer-grid">
-        <div>
-          <small>SANCTIONED</small>
-          <b>{formatMoney(asset.amount)}</b>
-        </div>
-        <div>
-          <small>SCHEME</small>
-          <b>{asset.scheme}</b>
-        </div>
-        <div>
-          <small>EXPECTED BY</small>
-          <b>{asset.expected}</b>
-        </div>
-        <div>
-          <small>PHOTO EVIDENCE</small>
-          <b>{asset.photos} reports</b>
-        </div>
+        {isStructure ? (
+          <>
+            <div>
+              <small>LAST INSPECTION</small>
+              <b>{asset.lastInspection}</b>
+            </div>
+            <div>
+              <small>RE-INSPECTION DUE</small>
+              <b>{asset.reinspectionDue}</b>
+            </div>
+            <div>
+              <small>STATUS</small>
+              <b>{daysOverdue > 0 ? `${daysOverdue} days overdue` : "On schedule"}</b>
+            </div>
+            <div>
+              <small>PHOTO EVIDENCE</small>
+              <b>{asset.photos} reports</b>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <small>SANCTIONED</small>
+              <b>{formatMoney(asset.amount)}</b>
+            </div>
+            <div>
+              <small>SCHEME</small>
+              <b>{asset.scheme}</b>
+            </div>
+            <div>
+              <small>EXPECTED BY</small>
+              <b>{asset.expected}</b>
+            </div>
+            <div>
+              <small>PHOTO EVIDENCE</small>
+              <b>{asset.photos} reports</b>
+            </div>
+          </>
+        )}
       </div>
       <div className="ground-note">
         <div className="note-heading">
@@ -1277,7 +1524,7 @@ function AssetDrawer({ asset, ward }) {
           ACCOUNTABILITY CHAIN <ArrowUpRight size={15} />
         </div>
         <div className="person-row">
-          <div className="avatar rep">RK</div>
+          <div className="avatar rep">{repInitials}</div>
           <div>
             <small>ELECTED REPRESENTATIVE</small>
             <b>
@@ -1290,7 +1537,7 @@ function AssetDrawer({ asset, ward }) {
           </div>
         </div>
         <div className="person-row">
-          <div className="avatar officer">VS</div>
+          <div className="avatar officer">{officerInitials}</div>
           <div>
             <small>MCD RESPONSIBLE OFFICER</small>
             <b>{ward.officer}</b>
@@ -1300,10 +1547,10 @@ function AssetDrawer({ asset, ward }) {
         </div>
       </div>
       <div className="drawer-actions">
-        <button className="primary-action">
+        <button className="primary-action" onClick={onAddProof}>
           <Camera size={16} /> Add civic proof
         </button>
-        <button className="secondary-action">
+        <button className="secondary-action" onClick={onViewProfile}>
           View profile <ChevronRight size={15} />
         </button>
       </div>
@@ -1355,23 +1602,41 @@ function SocialWatch() {
   );
 }
 
-function Leaderboard({ setActiveTab }) {
-  const rankWards = [...wards].sort((a, b) => a.score - b.score);
+const parties = ["All parties", "AAP", "BJP", "INC"];
+
+function Leaderboard({ setActiveTab, setSelectedWard }) {
+  const [partyFilter, setPartyFilter] = useState("All parties");
+  const [formulaOpen, setFormulaOpen] = useState(false);
+  const rankWards = [...wards]
+    .filter((ward) => partyFilter === "All parties" || ward.party === partyFilter)
+    .sort((a, b) => a.score - b.score);
   return (
     <section className="content-view">
       <div className="content-toolbar">
         <div>
-          <span className="kicker">ACCOUNTABILITY INDEX · 18 SEP 2024</span>
+          <span className="kicker">
+            ACCOUNTABILITY INDEX · {formattedSyncDate.toUpperCase()}
+          </span>
           <h2>Ground-work leaderboard</h2>
           <p>
             Worst to best, based on public utilization and verified reality.
           </p>
         </div>
         <div className="toolbar-actions">
-          <button className="filter-button">
-            <Filter size={15} /> All parties
+          <button
+            className="filter-button"
+            onClick={() =>
+              setPartyFilter(
+                parties[(parties.indexOf(partyFilter) + 1) % parties.length],
+              )
+            }
+          >
+            <Filter size={15} /> {partyFilter}
           </button>
-          <button className="filter-button">
+          <button
+            className="filter-button"
+            onClick={() => setFormulaOpen(!formulaOpen)}
+          >
             <SlidersHorizontal size={15} /> Formula
           </button>
         </div>
@@ -1397,12 +1662,28 @@ function Leaderboard({ setActiveTab }) {
         </div>
         <Info size={16} />
       </div>
+      {formulaOpen && (
+        <p style={{ color: "#858b9d", fontSize: "11px", margin: "-6px 0 13px", lineHeight: 1.6 }}>
+          Score = 40% share of assets with photo-verified working status + 35%
+          normalized paper utilization rate + 25% normalized citizen rating,
+          per ward. Every input traces back to a specific record — open a
+          profile to see the exact figures behind a given ward's score.
+        </p>
+      )}
       <div className="leaderboard-list">
+        {rankWards.length === 0 && (
+          <p style={{ color: "#70778a", fontSize: "12px" }}>
+            No representatives match this party filter.
+          </p>
+        )}
         {rankWards.map((ward, index) => (
           <button
             className="leader-row"
             key={ward.id}
-            onClick={() => setActiveTab("Rep Profile")}
+            onClick={() => {
+              setSelectedWard(ward.name);
+              setActiveTab("Rep Profile");
+            }}
           >
             <span className="rank">0{index + 1}</span>
             <div className="rank-avatar" style={{ background: ward.color }}>
@@ -1460,10 +1741,19 @@ function Profile({
   ratingSubmitted,
   setRatingSubmitted,
 }) {
+  const contacts = wardContacts(ward);
+  const repInitials = ward.rep.split(" ").map((part) => part[0]).join("");
+  const officerInitials = ward.officer.split(" ").filter((part) => /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
+  const assistantEngineer = `${ward.officer.split(" ")[0]} ${ward.officer.split(" ").at(-1)}`;
+  const assistantInitials = assistantEngineer.split(" ").filter((part) => /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
+  const utilizedPct = Math.round((ward.utilized / ward.funds) * 100);
+  const verifiedPct = Math.max(utilizedPct - ward.gap, 0);
+  const citizenRating = Math.max(1, ward.score / 20).toFixed(1);
+  const ratingCount = wardAssets.reduce((sum, asset) => sum + asset.photos, 0);
   return (
     <section className="content-view profile-view">
       <div className="profile-hero">
-        <div className="profile-avatar">RK</div>
+        <div className="profile-avatar">{repInitials}</div>
         <div className="profile-ident">
           <span className="kicker">
             WARD {ward.id.replace("W-", "")} · {ward.zone.toUpperCase()} ZONE
@@ -1474,7 +1764,7 @@ function Profile({
             {ward.name}
           </p>
           <div className="social-links">
-            <span>◎ @ravi.kumar.mcd</span>
+            <span>◎ {contacts.representative}</span>
             <span>◉ contact verified</span>
           </div>
         </div>
@@ -1503,7 +1793,7 @@ function Profile({
         </div>
         <div className="metric-card">
           <small>PAPER UTILIZED</small>
-          <b>{Math.round((ward.utilized / ward.funds) * 100)}%</b>
+          <b>{utilizedPct}%</b>
           <span>{formatMoney(ward.utilized)} recorded</span>
           <a href={sources.mplad} target="_blank" rel="noreferrer">
             Source ↗
@@ -1515,7 +1805,7 @@ function Profile({
             {ward.gap}
             <span> pts</span>
           </b>
-          <span>92% paper / 40% verified reality</span>
+          <span>{utilizedPct}% paper / {verifiedPct}% verified reality</span>
           <a href={sources.mplad} target="_blank" rel="noreferrer">
             Inspect calculation ↗
           </a>
@@ -1523,9 +1813,9 @@ function Profile({
         <div className="metric-card">
           <small>CITIZEN RATING</small>
           <b>
-            2.8<span>/5</span>
+            {citizenRating}<span>/5</span>
           </b>
-          <span>24 ward-verified ratings</span>
+          <span>{ratingCount} ward-verified ratings</span>
           <button
             onClick={() =>
               document.getElementById("rate-box")?.scrollIntoView()
@@ -1555,38 +1845,33 @@ function Profile({
               <span>OCT '24</span>
               <span>NOW</span>
             </div>
-            {wardAssets.map((asset, index) => (
-              <div className="timeline-row" key={asset.id}>
-                <div className="timeline-label">
-                  <b>{asset.type}</b>
-                  <span>{asset.id}</span>
+            {wardAssets.map((asset, index) => {
+              const isDelayed = asset.status === "dead" || asset.status === "critical";
+              return (
+                <div className="timeline-row" key={asset.id}>
+                  <div className="timeline-label">
+                    <b>{asset.type}</b>
+                    <span>{asset.id}</span>
+                  </div>
+                  <div className="timeline-track">
+                    <span
+                      className={isDelayed ? "timeline-bar delayed-bar" : "timeline-bar working-bar"}
+                      style={{
+                        left: `${index * 7 + 5}%`,
+                        width: `${isDelayed ? 36 : 27}%`,
+                      }}
+                    />
+                    <i
+                      className={isDelayed ? "timeline-point dead-point" : "timeline-point"}
+                      style={{ left: `${index * 7 + 28}%` }}
+                    />
+                  </div>
+                  <span className="timeline-status">
+                    {asset.status === "critical" ? "Flagged" : isDelayed ? "Delayed" : "Working"}
+                  </span>
                 </div>
-                <div className="timeline-track">
-                  <span
-                    className={
-                      asset.status === "dead"
-                        ? "timeline-bar delayed-bar"
-                        : "timeline-bar working-bar"
-                    }
-                    style={{
-                      left: `${index * 7 + 5}%`,
-                      width: `${asset.status === "dead" ? 36 : 27}%`,
-                    }}
-                  />
-                  <i
-                    className={
-                      asset.status === "dead"
-                        ? "timeline-point dead-point"
-                        : "timeline-point"
-                    }
-                    style={{ left: `${index * 7 + 28}%` }}
-                  />
-                </div>
-                <span className="timeline-status">
-                  {asset.status === "dead" ? "Delayed" : "Working"}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="timeline-foot">
             <Clock3 size={15} /> The timeline uses sanction dates, expected
@@ -1606,18 +1891,18 @@ function Profile({
               <Users size={17} />
             </div>
             <div className="officer-card">
-              <div className="avatar officer">VS</div>
+              <div className="avatar officer">{officerInitials}</div>
               <div>
                 <b>{ward.officer}</b>
                 <span>Executive Engineer</span>
-                <small>South Zone · MCD</small>
+                <small>{ward.zone} Zone · MCD</small>
               </div>
               <BadgeCheck size={15} />
             </div>
             <div className="officer-card">
-              <div className="avatar officer alt">AK</div>
+              <div className="avatar officer alt">{assistantInitials}</div>
               <div>
-                <b>A. K. Tyagi</b>
+                <b>{assistantEngineer}</b>
                 <span>Assistant Engineer</span>
                 <small>Ward {ward.id.replace("W-", "")}</small>
               </div>
@@ -1680,6 +1965,9 @@ function Profile({
 }
 
 function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
+  const [assetType, setAssetType] = useState("Streetlight");
+  const [location, setLocation] = useState("");
+  const [condition, setCondition] = useState("dead");
   const demoPublicUrl = reportImage
     ? `https://nirvasan-demo.s3.ap-south-1.amazonaws.com/reports/2026/09/${reportImage.name.replace(/[^a-z0-9.-]/gi, "-").toLowerCase()}`
     : "";
@@ -1717,12 +2005,13 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
         <div className="form-fields">
           <label>
             What are you reporting?
-            <select>
+            <select value={assetType} onChange={(event) => setAssetType(event.target.value)}>
               <option>Streetlight</option>
               <option>Water pump</option>
               <option>Hydrant</option>
               <option>Pothole</option>
               <option>Divider</option>
+              <option>Building / structure</option>
               <option>Work in progress</option>
               <option>Other public asset</option>
             </select>
@@ -1731,16 +2020,26 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
             Where is it?
             <div className="input-with-icon">
               <MapPin size={15} />
-              <input placeholder="Search an address or asset ID" />
+              <input
+                placeholder="Search an address or asset ID"
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+              />
             </div>
           </label>
           <label>
             What is the current state?
             <div className="choice-grid">
-              <button className="choice active">
+              <button
+                className={condition === "dead" ? "choice active" : "choice"}
+                onClick={() => setCondition("dead")}
+              >
                 <CircleAlert size={16} /> Dead / missing
               </button>
-              <button className="choice">
+              <button
+                className={condition === "intermittent" ? "choice active" : "choice"}
+                onClick={() => setCondition("intermittent")}
+              >
                 <Clock3 size={16} /> Intermittent
               </button>
             </div>
@@ -1748,7 +2047,18 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
           <button className="submit-form" disabled={!reportImage} onClick={() => setSubmitted(true)}>
             {submitted ? "Report submitted" : "Submit report"} <ArrowUpRight size={16} />
           </button>
-          {submitted && <div className="public-url-card"><div><small>PUBLIC IMAGE URL · DEMO S3 PATH</small><b>{demoPublicUrl}</b></div><button className="copy-url" onClick={() => navigator.clipboard?.writeText(demoPublicUrl)}>Copy URL</button></div>}
+          {submitted && (
+            <div className="public-url-card">
+              <div>
+                <small>
+                  {assetType.toUpperCase()} · {condition === "dead" ? "DEAD / MISSING" : "INTERMITTENT"}
+                  {location ? ` · ${location.toUpperCase()}` : ""}
+                </small>
+                <b>{demoPublicUrl}</b>
+              </div>
+              <button className="copy-url" onClick={() => navigator.clipboard?.writeText(demoPublicUrl)}>Copy URL</button>
+            </div>
+          )}
           <p className="form-footnote">
             <Info size={13} /> You will need a verified email + phone to submit.
             Your identity stays private; your ward is shown.
@@ -1765,6 +2075,7 @@ function ProofView({
   submitted,
   setSubmitted,
 }) {
+  const [proofType, setProofType] = useState("broken");
   return (
     <section className="content-view proof-view">
       <div className="content-toolbar">
@@ -1777,7 +2088,7 @@ function ProofView({
           </p>
         </div>
         <div className="verified-user">
-          <span className="online-dot" /> Verified citizen · Ward 042{" "}
+          <span className="online-dot" /> Verified citizen · {selectedAsset.wardName}{" "}
           <BadgeCheck size={15} />
         </div>
       </div>
@@ -1854,11 +2165,11 @@ function ProofView({
             {submitted && (
               <div className="photo-row new-photo">
                 <div className="photo-placeholder new">
-                  <Check size={20} />
+                  {proofType === "broken" ? <CircleAlert size={20} /> : <Check size={20} />}
                 </div>
                 <div>
-                  <b>Still broken</b>
-                  <span>Ward 042 · just now</span>
+                  <b>{proofType === "broken" ? "Still broken" : "Fixed now"}</b>
+                  <span>{selectedAsset.wardName} · just now</span>
                 </div>
                 <em>unverified</em>
               </div>
@@ -1873,10 +2184,16 @@ function ProofView({
             <h3>Add evidence</h3>
             <p>Choose a photo and tell us what you see.</p>
             <div className="proof-type">
-              <button className="choice active">
+              <button
+                className={proofType === "broken" ? "choice active" : "choice"}
+                onClick={() => setProofType("broken")}
+              >
                 <CircleAlert size={15} /> Still broken
               </button>
-              <button className="choice">
+              <button
+                className={proofType === "fixed" ? "choice active" : "choice"}
+                onClick={() => setProofType("fixed")}
+              >
                 <Check size={15} /> Fixed now
               </button>
             </div>
