@@ -7,6 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+CLAUDE.md
+Nirvasan_Project_Document.docx
+
 node_modules
 dist
 dist-ssr
