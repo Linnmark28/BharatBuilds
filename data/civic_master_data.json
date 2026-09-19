@@ -1,0 +1,537 @@
+[
+  {
+    "ward_or_constituency": "10-JHARODA",
+    "politician": {
+      "id": "gagan-choudhary-winner-84e184d00c",
+      "full_name": "Gagan Choudhary (Winner)",
+      "party": "AAP",
+      "constituency_or_ward": "10-JHARODA",
+      "election_year": 2022,
+      "criminal_cases_count": 0,
+      "education_qualification": "Category: Graduate Professional | B.A. LL.B. , Mewar Law Institute , CCS University Year 2013-2018",
+      "total_assets_inr": 5003915,
+      "total_liabilities_inr": null,
+      "affidavit_url": "",
+      "source_url": "https://www.myneta.info/delhi2022/candidate.php?candidate_id=4989",
+      "scraped_at": "2026-09-19T08:21:51Z"
+    },
+    "responsible_departments": [
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Executive Engineer (Electrical)",
+        "duties": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Junior Engineer (Electrical)",
+        "duties": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Executive Engineer (Water)",
+        "duties": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Junior Engineer (Water Lines and Borewells)",
+        "duties": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Executive Engineer (Roads / PWD)",
+        "duties": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Junior Engineer (Roads)",
+        "duties": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Chief Municipal Officer (Sanitation)",
+        "duties": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Sanitary Inspector",
+        "duties": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "ward_or_constituency": "10-JHARODA",
+    "politician": {
+      "id": "ambika-77fd7fe5a8",
+      "full_name": "Ambika",
+      "party": "IND",
+      "constituency_or_ward": "10-JHARODA",
+      "election_year": 2022,
+      "criminal_cases_count": 0,
+      "education_qualification": "Category: Graduate Professional | B.A. LL.B. from Maharaja College Ara, Bihar In the year 2005",
+      "total_assets_inr": 7325000,
+      "total_liabilities_inr": null,
+      "affidavit_url": "",
+      "source_url": "https://www.myneta.info/delhi2022/candidate.php?candidate_id=4988",
+      "scraped_at": "2026-09-19T08:22:19Z"
+    },
+    "responsible_departments": [
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Executive Engineer (Electrical)",
+        "duties": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Junior Engineer (Electrical)",
+        "duties": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Executive Engineer (Water)",
+        "duties": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Junior Engineer (Water Lines and Borewells)",
+        "duties": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Executive Engineer (Roads / PWD)",
+        "duties": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Junior Engineer (Roads)",
+        "duties": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Chief Municipal Officer (Sanitation)",
+        "duties": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Sanitary Inspector",
+        "duties": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "ward_or_constituency": "10-JHARODA",
+    "politician": {
+      "id": "brijesh-kumar-rai-50d0b9d47a",
+      "full_name": "Brijesh Kumar Rai",
+      "party": "BJP",
+      "constituency_or_ward": "10-JHARODA",
+      "election_year": 2022,
+      "criminal_cases_count": 0,
+      "education_qualification": "Category: Post Graduate | Master in Mass Communication , from Guru Jambheshwar University of Science and Technology, Hisar in the year of 2006",
+      "total_assets_inr": 5357512,
+      "total_liabilities_inr": null,
+      "affidavit_url": "",
+      "source_url": "https://www.myneta.info/delhi2022/candidate.php?candidate_id=4990",
+      "scraped_at": "2026-09-19T08:22:44Z"
+    },
+    "responsible_departments": [
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Executive Engineer (Electrical)",
+        "duties": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Junior Engineer (Electrical)",
+        "duties": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Executive Engineer (Water)",
+        "duties": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Junior Engineer (Water Lines and Borewells)",
+        "duties": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Executive Engineer (Roads / PWD)",
+        "duties": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Junior Engineer (Roads)",
+        "duties": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Chief Municipal Officer (Sanitation)",
+        "duties": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Sanitary Inspector",
+        "duties": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "ward_or_constituency": "10-JHARODA",
+    "politician": {
+      "id": "chetna-maurya-f483609a52",
+      "full_name": "Chetna Maurya",
+      "party": "IND",
+      "constituency_or_ward": "10-JHARODA",
+      "election_year": 2022,
+      "criminal_cases_count": 0,
+      "education_qualification": "Category: Graduate | B.A.Honours in Geography from DU passed in 2016 Delhi",
+      "total_assets_inr": 155000,
+      "total_liabilities_inr": null,
+      "affidavit_url": "",
+      "source_url": "https://www.myneta.info/delhi2022/candidate.php?candidate_id=4987",
+      "scraped_at": "2026-09-19T08:22:48Z"
+    },
+    "responsible_departments": [
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Executive Engineer (Electrical)",
+        "duties": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Junior Engineer (Electrical)",
+        "duties": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Executive Engineer (Water)",
+        "duties": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Junior Engineer (Water Lines and Borewells)",
+        "duties": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Executive Engineer (Roads / PWD)",
+        "duties": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Junior Engineer (Roads)",
+        "duties": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Chief Municipal Officer (Sanitation)",
+        "duties": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Sanitary Inspector",
+        "duties": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "ward_or_constituency": "10-JHARODA",
+    "politician": {
+      "id": "gulab-singhal-28a42392ef",
+      "full_name": "Gulab Singhal",
+      "party": "IND",
+      "constituency_or_ward": "10-JHARODA",
+      "election_year": 2022,
+      "criminal_cases_count": 0,
+      "education_qualification": "Category: 10th Pass | 10th Pass, Govt Secondry School Panipat Haryana",
+      "total_assets_inr": 11000,
+      "total_liabilities_inr": null,
+      "affidavit_url": "",
+      "source_url": "https://www.myneta.info/delhi2022/candidate.php?candidate_id=4991",
+      "scraped_at": "2026-09-19T08:22:53Z"
+    },
+    "responsible_departments": [
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Executive Engineer (Electrical)",
+        "duties": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Power Distribution and Street Lighting",
+        "officer_title": "Junior Engineer (Electrical)",
+        "duties": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "department_id": "DEPT_POWER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Executive Engineer (Water)",
+        "duties": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Delhi Jal Board and Municipal Water Works",
+        "officer_title": "Junior Engineer (Water Lines and Borewells)",
+        "duties": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "department_id": "DEPT_WATER_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Executive Engineer (Roads / PWD)",
+        "duties": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Road Maintenance and Pothole Response",
+        "officer_title": "Junior Engineer (Roads)",
+        "duties": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "department_id": "DEPT_ROADS_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Chief Municipal Officer (Sanitation)",
+        "duties": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "department_name": "Waste Management and Sanitation",
+        "officer_title": "Sanitary Inspector",
+        "duties": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "department_id": "DEPT_WASTE_01",
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  }
+]

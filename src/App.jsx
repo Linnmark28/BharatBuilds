@@ -10,6 +10,9 @@ import {
   useMap,
 } from "react-leaflet";
 import { divIcon } from "leaflet";
+import civicCandidates from "../data/candidates.json";
+import civicDepartments from "../data/departments_and_officers.json";
+import civicMasterData from "../data/civic_master_data.json";
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -20,6 +23,8 @@ import {
   CircleAlert,
   Clock3,
   Download,
+  Database,
+  Building2,
   FileText,
   Filter,
   Gauge,
@@ -1126,6 +1131,7 @@ function App() {
     { name: "Leaderboard", icon: BarChart3 },
     { name: "Ward Compare", icon: SlidersHorizontal },
     { name: "Alerts", icon: CircleAlert },
+    { name: "Civic Data", icon: Database },
     { name: "Rep Profile", icon: Landmark },
     { name: "Officers", icon: Users },
     { name: "Social Watch", icon: MessageSquare },
@@ -1234,6 +1240,7 @@ function App() {
         )}
         {activeTab === "Ward Compare" && <WardCompare />}
         {activeTab === "Alerts" && <Alerts />}
+        {activeTab === "Civic Data" && <CivicData />}
         {activeTab === "Rep Profile" && (
           <Profile
             ward={currentWard}
@@ -1889,6 +1896,68 @@ function Alerts() {
     <section className="content-view">
       <div className="content-toolbar"><div><span className="kicker">REVIEW QUEUE / TRACEABLE ALERTS</span><h2>What needs attention</h2><p>Prioritized leads for human review. Alerts never change asset status automatically.</p></div><div className="directory-count"><b>{alerts.length}</b><span>open alerts</span></div></div>
       <div className="social-report-list">{alerts.map((alert, index) => <article className="social-report" key={`${alert.ward.id}-${index}`}><div className="social-report-top"><span className="social-handle">{alert.level}</span><span className="social-status">{alert.ward.id}</span></div><p><b>{alert.title}</b><br />{alert.detail}</p><div className="social-report-footer"><span>{alert.ward.zone} zone · {alert.ward.officer}</span><a href={sources.mplad} target="_blank" rel="noreferrer">Inspect source ↗</a></div></article>)}</div>
+    </section>
+  );
+}
+
+function CivicData() {
+  const [view, setView] = useState("candidates");
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.toLowerCase().trim();
+  const candidates = civicCandidates.filter((candidate) =>
+    `${candidate.full_name} ${candidate.party} ${candidate.constituency_or_ward}`.toLowerCase().includes(normalizedQuery),
+  );
+  const departments = civicDepartments.filter((department) =>
+    `${department.department_name} ${department.category} ${department.service_keywords.join(" ")}`.toLowerCase().includes(normalizedQuery),
+  );
+  const joinedRecords = civicMasterData.filter((record) =>
+    `${record.ward_or_constituency} ${record.politician?.full_name || ""}`.toLowerCase().includes(normalizedQuery),
+  );
+  return (
+    <section className="content-view">
+      <div className="content-toolbar">
+        <div>
+          <span className="kicker">OPTIONAL DATA LAYER / LOCAL JSON</span>
+          <h2>Political context meets civic duty</h2>
+          <p>Inspect scraped candidate records, department responsibilities, and merged ward context without changing core map data.</p>
+        </div>
+        <div className="directory-count"><b>{civicCandidates.length + civicDepartments.length}</b><span>source records</span></div>
+      </div>
+      <div className="metric-grid">
+        <button className={view === "candidates" ? "metric-card highlight" : "metric-card"} onClick={() => setView("candidates")}>
+          <small>CANDIDATE DATA</small><b>{civicCandidates.length}</b><span>MyNeta records loaded</span>
+        </button>
+        <button className={view === "departments" ? "metric-card highlight" : "metric-card"} onClick={() => setView("departments")}>
+          <small>RESPONSIBILITY MATRIX</small><b>{civicDepartments.length}</b><span>urban sectors defined</span>
+        </button>
+        <button className={view === "joined" ? "metric-card highlight" : "metric-card"} onClick={() => setView("joined")}>
+          <small>MERGED CONTEXT</small><b>{civicMasterData.length}</b><span>ward / constituency joins</span>
+        </button>
+        <div className="metric-card"><small>PIPELINE</small><b>LOCAL</b><span>Run Python scripts to refresh</span></div>
+      </div>
+      <div className="toolbar-actions" style={{ margin: "24px 0 18px" }}>
+        <label className="search-box"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search civic data" /></label>
+        <button className={view === "candidates" ? "filter-button active" : "filter-button"} onClick={() => setView("candidates")}><Users size={15} /> Candidates</button>
+        <button className={view === "departments" ? "filter-button active" : "filter-button"} onClick={() => setView("departments")}><Building2 size={15} /> Departments</button>
+        <button className={view === "joined" ? "filter-button active" : "filter-button"} onClick={() => setView("joined")}><Database size={15} /> Joined records</button>
+      </div>
+      {view === "candidates" && (
+        <div className="social-report-list">
+          {!candidates.length && <div className="social-note"><Info size={16} /><div><b>No candidate records loaded</b><span>Run `scripts/scrape_myneta.py` with a public MyNeta election page, then rebuild or refresh this app.</span></div></div>}
+          {candidates.map((candidate) => <article className="social-report" key={candidate.id}><div className="social-report-top"><span className="social-handle">{candidate.full_name}</span><span className="social-status">{candidate.party || "Party unavailable"}</span></div><p>{candidate.constituency_or_ward || "Constituency unavailable"}</p><div className="social-report-footer"><span>{candidate.election_year || "Year unavailable"} · {candidate.education_qualification || "Education unavailable"}</span>{candidate.affidavit_url && <a href={candidate.affidavit_url} target="_blank" rel="noreferrer">Affidavit ↗</a>}</div></article>)}
+        </div>
+      )}
+      {view === "departments" && (
+        <div className="officer-directory">
+          {departments.map((department) => <article className="directory-card" key={department.department_id}><div className="directory-card-top"><span className="ward-code">{department.department_id}</span><span className="zone-tag">{department.category}</span></div><h3>{department.department_name}</h3>{department.officer_roles.map((role) => <div className="directory-person compact" key={role.role_id}><div className="directory-avatar assistant">{role.designation.split(" ").slice(0, 2).map((part) => part[0]).join("")}</div><div><small>{role.jurisdiction}</small><b>{role.designation}</b><span>{role.responsibilities.join(" · ")}</span></div></div>)}<div className="directory-footer"><span>{department.officer_roles.length} officer roles</span><span>{department.service_keywords.slice(0, 2).join(" · ")}</span></div></article>)}
+        </div>
+      )}
+      {view === "joined" && (
+        <div className="social-report-list">
+          {!joinedRecords.length && <div className="social-note"><Info size={16} /><div><b>No joined records yet</b><span>Candidate and department records join after the Python merge script runs with candidate data.</span></div></div>}
+          {joinedRecords.map((record) => <article className="social-report" key={`${record.ward_or_constituency}-${record.politician.id}`}><div className="social-report-top"><span className="social-handle">{record.ward_or_constituency}</span><span className="social-status">{record.politician.full_name}</span></div><p>{record.responsible_departments.map((department) => department.officer_title).join(" · ")}</p><div className="social-report-footer"><span>{record.responsible_departments.length} linked duties</span></div></article>)}
+        </div>
+      )}
     </section>
   );
 }

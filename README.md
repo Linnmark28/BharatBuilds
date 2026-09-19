@@ -67,6 +67,29 @@ source pages' terms and robots policy before running it. These pages publish
 empanelled personnel, not guaranteed ward assignments. Records are marked
 `Scraped; pending ward assignment verification`.
 
+### Optional candidate and civic data pipeline
+
+This additive Python pipeline does not modify existing React data or UI. Install
+its dependencies, scrape public MyNeta election pages, then merge candidate
+records with four municipal responsibility sectors.
+
+```bash
+python -m pip install -r requirements.txt
+python scripts/scrape_myneta.py --url https://www.myneta.info/delhi2022/ --year 2022
+python scripts/merge_civic_data.py
+```
+
+Outputs:
+
+- `data/candidates.json` - normalized MyNeta candidate records
+- `data/departments_and_officers.json` - street lighting, water, roads, and sanitation duties
+- `data/civic_master_data.json` - politician plus responsible department contract
+- `scripts/civic_data.py` - optional `get_civic_data_by_ward` and `get_civic_data_by_candidate` getters
+
+Use only public pages, respect MyNeta terms and robots policy, and keep request
+rates low. Scraper uses custom User-Agent, 1.5-3 second detail-page delays,
+exponential backoff, and missing-field defaults.
+
 ## Main Demo Routes
 
 - **Map:** Delhi ward layer, ward selection, street-level zoom, type-specific asset markers, accountability drawer
