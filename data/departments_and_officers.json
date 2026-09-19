@@ -1,0 +1,122 @@
+[
+  {
+    "department_id": "DEPT_POWER_01",
+    "department_name": "Power Distribution and Street Lighting",
+    "category": "Street Lights and Infrastructure",
+    "service_keywords": ["streetlight", "street light", "high mast", "dark spot", "pole", "transformer"],
+    "officer_roles": [
+      {
+        "role_id": "OFFICER_EE_ELEC",
+        "designation": "Executive Engineer (Electrical)",
+        "jurisdiction": "Ward / Sub-Division Level",
+        "responsibilities": [
+          "Maintenance and repair of street lights and high-mast lights",
+          "Transformer safety and pole grounding",
+          "Response to dark-spot complaints"
+        ],
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "role_id": "OFFICER_JE_ELEC",
+        "designation": "Junior Engineer (Electrical)",
+        "jurisdiction": "Beat / Ward Level",
+        "responsibilities": [
+          "Inspect reported electrical faults",
+          "Verify repair completion with geo-tagged evidence",
+          "Maintain dark-spot and outage registers"
+        ],
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "department_id": "DEPT_WATER_01",
+    "department_name": "Delhi Jal Board and Municipal Water Works",
+    "category": "Water Supply and Hydra / Handpumps",
+    "service_keywords": ["water pump", "handpump", "hydra", "borewell", "water leak", "hydrant", "tanker"],
+    "officer_roles": [
+      {
+        "role_id": "OFFICER_EE_WATER",
+        "designation": "Executive Engineer (Water)",
+        "jurisdiction": "Zone / Sub-Division Level",
+        "responsibilities": [
+          "Approval and maintenance of public handpumps and hydra pumps",
+          "Pipe leakage detection and supply schedule management",
+          "Water contamination testing and tanker dispatch"
+        ],
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "role_id": "OFFICER_JE_WATER",
+        "designation": "Junior Engineer (Water Lines and Borewells)",
+        "jurisdiction": "Ward Level",
+        "responsibilities": [
+          "Inspect pumps, hydrants, borewells, and reported leaks",
+          "Record pressure and serviceability checks",
+          "Escalate contamination and supply interruptions"
+        ],
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "department_id": "DEPT_ROADS_01",
+    "department_name": "Road Maintenance and Pothole Response",
+    "category": "Roads and Public Works",
+    "service_keywords": ["pothole", "road", "divider", "median", "footpath", "resurfacing", "PWD"],
+    "officer_roles": [
+      {
+        "role_id": "OFFICER_EE_ROADS",
+        "designation": "Executive Engineer (Roads / PWD)",
+        "jurisdiction": "Division / Zone Level",
+        "responsibilities": [
+          "Plan and supervise road resurfacing and renewal",
+          "Approve repair estimates and contractor measurements",
+          "Track overdue pothole and median restoration works"
+        ],
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "role_id": "OFFICER_JE_ROADS",
+        "designation": "Junior Engineer (Roads)",
+        "jurisdiction": "Ward / Works Site Level",
+        "responsibilities": [
+          "Inspect potholes, dividers, footpaths, and work sites",
+          "Verify dimensions, materials, and completion photos",
+          "Log repeat failures against the same asset"
+        ],
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  },
+  {
+    "department_id": "DEPT_WASTE_01",
+    "department_name": "Waste Management and Sanitation",
+    "category": "Waste and Sanitation",
+    "service_keywords": ["waste", "garbage", "sanitation", "drain", "toilet", "sweeping", "dump", "sewer"],
+    "officer_roles": [
+      {
+        "role_id": "OFFICER_CMO_SANITATION",
+        "designation": "Chief Municipal Officer (Sanitation)",
+        "jurisdiction": "Zone Level",
+        "responsibilities": [
+          "Supervise solid-waste collection and sanitation contracts",
+          "Monitor waste lifting, sweeping, and drain-cleaning schedules",
+          "Coordinate public-health escalation for persistent dumping"
+        ],
+        "linked_political_oversight": "Local Ward Corporator / MLA"
+      },
+      {
+        "role_id": "OFFICER_SANITARY_INSPECTOR",
+        "designation": "Sanitary Inspector",
+        "jurisdiction": "Ward / Sanitation Beat Level",
+        "responsibilities": [
+          "Inspect garbage points, public toilets, drains, and sanitation beats",
+          "Issue field observations and verify cleanup evidence",
+          "Escalate repeated non-compliance by service contractors"
+        ],
+        "linked_political_oversight": "Local Ward Corporator"
+      }
+    ]
+  }
+]
