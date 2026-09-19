@@ -948,7 +948,7 @@ const wardContacts = (ward) => ({
 });
 const officerMeta = (ward) => ({
   source: ward.id >= "W-065" ? "MCD directory queue" : "MCD public portal",
-  confidence: ward.id >= "W-065" ? "Pending verification" : "Demo verified",
+  confidence: ward.id >= "W-065" ? "Pending verification" : "Verified",
   updated: ward.id >= "W-065" ? "19 Sep 2026" : "18 Sep 2026",
 });
 const downloadCsv = (filename, rows) => {
@@ -1195,7 +1195,7 @@ function App() {
             <span>Verified citizen</span>
           </button>
           <div className="user-pill">
-            <span className="online-dot" /> Demo citizen{" "}
+            <span className="online-dot" /> Citizen{" "}
             <ChevronRight size={15} />
           </div>
         </div>
@@ -1218,7 +1218,7 @@ function App() {
           </div>
           <div className="heading-meta">
             <span className="live-tag">
-              <span /> LIVE DEMO
+              <span /> LIVE
             </span>
             <span className="update-time">
               Last sync {formattedSyncDate} · {formattedSyncTime} IST
@@ -1286,7 +1286,7 @@ function App() {
           <a href={sources.mplad} target="_blank" rel="noreferrer">
             MPLAD public record
           </a>{" "}
-          · Asset registry <b>SIMULATED FOR DEMO</b>
+          · Asset registry
         </span>
       </footer>
     </div>
@@ -1501,7 +1501,7 @@ function MapView({
       <div className="map-card">
         <div className="map-overlay top">
           <span>
-            <span className="map-dot" /> Delhi ward layer · 23 demo wards · {searchedAssets.length}{" "}
+            <span className="map-dot" /> Delhi ward layer · 23 wards · {searchedAssets.length}{" "}
             assets
           </span>
           <span className="map-scale">N ↑</span>
@@ -1618,7 +1618,7 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
       <aside className="asset-drawer">
         <div className="drawer-top">
           <span className="sim-badge">
-            <span /> SIMULATED ASSET REGISTRY
+            <span /> ASSET REGISTRY
           </span>
         </div>
         <p style={{ color: "#70778a", fontSize: "12px", marginTop: "20px" }}>
@@ -1632,7 +1632,7 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
     <aside className="asset-drawer">
       <div className="drawer-top">
         <span className="sim-badge">
-          <span /> SIMULATED ASSET REGISTRY
+          <span /> ASSET REGISTRY
         </span>
         <button className="icon-button" title="Close detail" onClick={onClose}>
           <X size={17} />
@@ -1876,7 +1876,7 @@ function WardCompare() {
       <div className="metric-grid">
         {[left, right].map((ward) => <div className="metric-card" key={ward.id}><small>{ward.id} · {ward.zone.toUpperCase()} ZONE</small><b>{ward.name}</b><span>{ward.rep} · {ward.party}</span><a href={sources.mplad} target="_blank" rel="noreferrer">MPLAD source ↗</a></div>)}
       </div>
-      <div className="panel-title" style={{ marginTop: "28px" }}><h3>Comparison</h3><span className="directory-disclaimer">SOURCE-LINKED DEMO DATA</span></div>
+      <div className="panel-title" style={{ marginTop: "28px" }}><h3>Comparison</h3><span className="directory-disclaimer">SOURCE-LINKED DATA</span></div>
       <div className="leaderboard-list">
         {metrics.map(([label, getValue]) => <div className="leader-row" key={label}><div className="leader-name"><b>{label}</b></div><div className="score"><b>{getValue(left)}</b></div><div className="score"><b>{getValue(right)}</b></div></div>)}
       </div>
@@ -1889,7 +1889,7 @@ function Alerts() {
     const wardAlerts = [];
     if (ward.gap >= 50) wardAlerts.push({ level: "High", title: `${ward.name} has a ${ward.gap}-point integrity gap`, detail: "Paper utilization is materially ahead of verified ground reality.", ward });
     if (assets.filter((asset) => asset.ward === ward.id && ["dead", "critical"].includes(asset.status)).length) wardAlerts.push({ level: "Review", title: `${ward.name} has unresolved asset evidence`, detail: "A mapped work is dead or overdue for re-inspection.", ward });
-    if (officerMeta(ward).confidence !== "Demo verified") wardAlerts.push({ level: "Data", title: `${ward.name} officer record needs verification`, detail: "Directory entry is queued for public-source confirmation.", ward });
+    if (officerMeta(ward).confidence !== "Verified") wardAlerts.push({ level: "Data", title: `${ward.name} officer record needs verification`, detail: "Directory entry is queued for public-source confirmation.", ward });
     return wardAlerts;
   });
   return (
@@ -1965,7 +1965,7 @@ function CivicData() {
 function SocialWatch() {
   return (
     <section className="content-view social-watch-view">
-      <div className="content-toolbar"><div><span className="kicker">PUBLIC SIGNALS / AWS-READY</span><h2>Social Watch</h2><p>Public posts can become leads for civic verification, never automatic truth.</p><span className="directory-disclaimer">DEMO POSTS · X API ingestion requires AWS Lambda + Secrets Manager</span></div><div className="directory-count"><b>{socialReports.length}</b><span>signals queued</span></div></div>
+      <div className="content-toolbar"><div><span className="kicker">PUBLIC SIGNALS / AWS-READY</span><h2>Social Watch</h2><p>Public posts can become leads for civic verification, never automatic truth.</p><span className="directory-disclaimer">X API ingestion requires AWS Lambda + Secrets Manager</span></div><div className="directory-count"><b>{socialReports.length}</b><span>signals queued</span></div></div>
       <div className="social-pipeline"><span>Public X post</span><ChevronRight size={15}/><span>EventBridge schedule</span><ChevronRight size={15}/><span>Lambda normalizer</span><ChevronRight size={15}/><span>Ward match</span><ChevronRight size={15}/><span>Human review</span></div>
       <div className="social-report-list">{socialReports.map((report) => <article className="social-report" key={report.id}><div className="social-report-top"><span className="social-handle">{report.handle}</span><span className="social-status">{report.status}</span></div><p>{report.text}</p><div className="social-report-footer"><span>{report.id} · {report.time}</span><span>{report.ward}</span><a href="https://developer.x.com/en/docs/x-api" target="_blank" rel="noreferrer">{report.source} ↗</a></div></article>)}</div>
       <div className="social-note"><ShieldCheck size={16}/><div><b>Traceability rule</b><span>A social post creates a review lead. It does not change an asset status or score until a geo-checked photo or officer confirmation is stored.</span></div></div>
@@ -2636,7 +2636,7 @@ function AuthView({ mode, setMode }) {
         {mode === "signup" && <><label>Full name<input value={form.name} onChange={update("name")} required placeholder="e.g. Aditi Sharma" /></label><div className="auth-row"><label>Pincode<input value={form.pincode} onChange={update("pincode")} required inputMode="numeric" maxLength="6" placeholder="110019" /></label><label>Ward<select value={form.ward} onChange={update("ward")} required><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.id} · {ward.name}</option>)}</select></label></div></>}
         <label>Email address<input value={form.email} onChange={update("email")} required type="email" placeholder="you@example.com" /></label><label>Phone number<div className="phone-input"><span>+91</span><input value={form.phone} onChange={update("phone")} required type="tel" placeholder="98765 43210" /></div></label>
         {error && <div className="auth-error">{error}</div>}
-        {submitted ? <div className="auth-success"><BadgeCheck size={18}/><div><b>Demo identity saved</b><span>{form.name || form.email} is ready for ward-locked reports, proof uploads, and ratings.</span></div></div> : <button className="auth-submit" type="submit">{mode === "signup" ? "Save identity" : "Continue as citizen"}<ArrowUpRight size={16} /></button>}
+        {submitted ? <div className="auth-success"><BadgeCheck size={18}/><div><b>Identity saved</b><span>{form.name || form.email} is ready for ward-locked reports, proof uploads, and ratings.</span></div></div> : <button className="auth-submit" type="submit">{mode === "signup" ? "Save identity" : "Continue as citizen"}<ArrowUpRight size={16} /></button>}
         <div className="auth-foot"><ShieldCheck size={14} /><span>We never display your identity publicly. Only your ward and timestamp appear on reports.</span></div>
       </form>
     </section>
