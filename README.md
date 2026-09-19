@@ -50,6 +50,23 @@ npm run build
 npm run preview
 ```
 
+### Scrape officer directory
+
+The scraper uses fixed official MCD public sources: the [empanelled engineer
+list](https://eodb.mcd.gov.in/engineer_list) and [empanelled supervisor
+list](https://eodb.mcd.gov.in/supervisor_list). It normalizes name, role,
+address, phone, email, source, timestamp, and confidence into
+`public/data/officers.json`.
+
+```bash
+bun run scrape:officers
+```
+
+The scraper does not bypass login, CAPTCHA, or access controls. Review the
+source pages' terms and robots policy before running it. These pages publish
+empanelled personnel, not guaranteed ward assignments. Records are marked
+`Scraped; pending ward assignment verification`.
+
 ## Main Demo Routes
 
 - **Map:** Delhi ward layer, ward selection, street-level zoom, type-specific asset markers, accountability drawer

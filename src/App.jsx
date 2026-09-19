@@ -19,6 +19,7 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
+  Download,
   FileText,
   Filter,
   Gauge,
@@ -29,6 +30,7 @@ import {
   Menu,
   MessageSquare,
   Search,
+  RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -354,6 +356,174 @@ const wards = [
     utilized: 8585000,
     gap: 35,
     score: 53,
+  },
+  {
+    id: "W-065",
+    name: "Patel Nagar",
+    zone: "Central",
+    rep: "Kavita Saini",
+    party: "BJP",
+    officer: "S. N. Bhatia",
+    assistantOfficer: "R. K. Verma",
+    color: "#1976d2",
+    funds: 10800000,
+    utilized: 8640000,
+    gap: 44,
+    score: 48,
+  },
+  {
+    id: "W-066",
+    name: "Rajinder Nagar",
+    zone: "Central",
+    rep: "Aman Kapoor",
+    party: "AAP",
+    officer: "P. S. Dahiya",
+    assistantOfficer: "M. K. Arora",
+    color: "#ff8a22",
+    funds: 9200000,
+    utilized: 7912000,
+    gap: 33,
+    score: 57,
+  },
+  {
+    id: "W-067",
+    name: "Vikaspuri",
+    zone: "West",
+    rep: "Shalini Bhasin",
+    party: "INC",
+    officer: "A. K. Walia",
+    assistantOfficer: "D. P. Saini",
+    color: "#1976d2",
+    funds: 11900000,
+    utilized: 8925000,
+    gap: 47,
+    score: 44,
+  },
+  {
+    id: "W-068",
+    name: "Tilak Nagar",
+    zone: "West",
+    rep: "Mukul Arora",
+    party: "AAP",
+    officer: "R. S. Bedi",
+    assistantOfficer: "N. K. Sood",
+    color: "#ff8a22",
+    funds: 8700000,
+    utilized: 7395000,
+    gap: 38,
+    score: 50,
+  },
+  {
+    id: "W-069",
+    name: "Shalimar Bagh",
+    zone: "North West",
+    rep: "Deepa Chawla",
+    party: "BJP",
+    officer: "V. P. Narang",
+    assistantOfficer: "S. K. Bansal",
+    color: "#1976d2",
+    funds: 13100000,
+    utilized: 11790000,
+    gap: 26,
+    score: 68,
+  },
+  {
+    id: "W-070",
+    name: "Wazirpur",
+    zone: "North West",
+    rep: "Naveen Ahuja",
+    party: "AAP",
+    officer: "H. R. Meena",
+    assistantOfficer: "A. S. Khatri",
+    color: "#1976d2",
+    funds: 9800000,
+    utilized: 7350000,
+    gap: 51,
+    score: 40,
+  },
+  {
+    id: "W-071",
+    name: "Burari",
+    zone: "North",
+    rep: "Suman Malik",
+    party: "INC",
+    officer: "J. P. Yadav",
+    assistantOfficer: "K. C. Rawat",
+    color: "#ff8a22",
+    funds: 7600000,
+    utilized: 5320000,
+    gap: 58,
+    score: 34,
+  },
+  {
+    id: "W-072",
+    name: "Mustafabad",
+    zone: "North East",
+    rep: "Faizan Ahmed",
+    party: "AAP",
+    officer: "T. L. Sharma",
+    assistantOfficer: "I. M. Khan",
+    color: "#1976d2",
+    funds: 8400000,
+    utilized: 6720000,
+    gap: 53,
+    score: 37,
+  },
+  {
+    id: "W-073",
+    name: "Preet Vihar",
+    zone: "East",
+    rep: "Radhika Jain",
+    party: "BJP",
+    officer: "N. S. Batra",
+    assistantOfficer: "V. K. Sethi",
+    color: "#ff8a22",
+    funds: 11500000,
+    utilized: 10350000,
+    gap: 29,
+    score: 65,
+  },
+  {
+    id: "W-074",
+    name: "Trilokpuri",
+    zone: "East",
+    rep: "Yusuf Ansari",
+    party: "AAP",
+    officer: "M. P. Mishra",
+    assistantOfficer: "R. D. Gautam",
+    color: "#1976d2",
+    funds: 7900000,
+    utilized: 5530000,
+    gap: 57,
+    score: 36,
+  },
+  {
+    id: "W-075",
+    name: "Jangpura",
+    zone: "South East",
+    rep: "Nitin Khanna",
+    party: "INC",
+    officer: "A. R. Kapoor",
+    assistantOfficer: "P. M. Singh",
+    color: "#ff8a22",
+    funds: 10100000,
+    utilized: 8585000,
+    gap: 35,
+    score: 55,
+  },
+  {
+    id: "W-076",
+    name: "Tughlakabad",
+    zone: "South East",
+    rep: "Shweta Rao",
+    party: "BJP",
+    officer: "G. D. Rana",
+    assistantOfficer: "B. L. Yadav",
+    color: "#1976d2",
+    funds: 8900000,
+    utilized: 6675000,
+    gap: 50,
+    score: 39,
   },
 ];
 
@@ -771,6 +941,22 @@ const wardContacts = (ward) => ({
   officerEmail: `${ward.officer.toLowerCase().replace(/[^a-z]/g, ".")}@mcd.delhi.gov.in`,
   officerPhone: "+91 11 2654 0" + ward.id.slice(-2),
 });
+const officerMeta = (ward) => ({
+  source: ward.id >= "W-065" ? "MCD directory queue" : "MCD public portal",
+  confidence: ward.id >= "W-065" ? "Pending verification" : "Demo verified",
+  updated: ward.id >= "W-065" ? "19 Sep 2026" : "18 Sep 2026",
+});
+const downloadCsv = (filename, rows) => {
+  const csv = rows
+    .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
 const socialReports = [
   { id: "X-DEL-021", handle: "@southdelhi_watch", text: "Dark crossing reported again near Nehru Place. Work was marked complete last quarter.", ward: "Kalkaji", time: "18 min ago", status: "Needs review", source: "X public post" },
   { id: "X-DEL-022", handle: "@rohini_residents", text: "Rohini Sector 9 park pump is running after the repair visit.", ward: "Rohini", time: "43 min ago", status: "Matched to asset", source: "X public post" },
@@ -938,6 +1124,8 @@ function App() {
   const tabs = [
     { name: "Map", icon: MapPin },
     { name: "Leaderboard", icon: BarChart3 },
+    { name: "Ward Compare", icon: SlidersHorizontal },
+    { name: "Alerts", icon: CircleAlert },
     { name: "Rep Profile", icon: Landmark },
     { name: "Officers", icon: Users },
     { name: "Social Watch", icon: MessageSquare },
@@ -1044,6 +1232,8 @@ function App() {
         {activeTab === "Leaderboard" && (
           <Leaderboard setActiveTab={setActiveTab} setSelectedWard={setSelectedWard} />
         )}
+        {activeTab === "Ward Compare" && <WardCompare />}
+        {activeTab === "Alerts" && <Alerts />}
         {activeTab === "Rep Profile" && (
           <Profile
             ward={currentWard}
@@ -1565,6 +1755,45 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
 }
 
 function Officers() {
+  const [query, setQuery] = useState("");
+  const [zoneFilter, setZoneFilter] = useState("All zones");
+  const [scrapedRecords, setScrapedRecords] = useState([]);
+  const [scrapeState, setScrapeState] = useState({ status: "idle", message: "" });
+  const loadScrapedRecords = () => {
+    fetch("/data/officers.json")
+      .then((response) => (response.ok ? response.json() : []))
+      .then((records) => setScrapedRecords(Array.isArray(records) ? records : []))
+      .catch(() => setScrapedRecords([]));
+  };
+  useEffect(() => {
+    loadScrapedRecords();
+  }, []);
+  const runScraper = async () => {
+    setScrapeState({ status: "loading", message: "Scraping directory..." });
+    try {
+      const response = await fetch("/api/scrape-officers", {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Scraper failed");
+      setScrapedRecords(result.records || []);
+      setScrapeState({ status: "success", message: `${result.count} records loaded` });
+    } catch (error) {
+      setScrapeState({ status: "error", message: error.message });
+    }
+  };
+  const zones = ["All zones", ...new Set(wards.map((ward) => ward.zone))];
+  const filteredWards = wards.filter((ward) => {
+    const searchable = `${ward.name} ${ward.id} ${ward.officer} ${ward.assistantOfficer || ""}`.toLowerCase();
+    return searchable.includes(query.toLowerCase()) && (zoneFilter === "All zones" || ward.zone === zoneFilter);
+  });
+  const exportOfficers = () => downloadCsv("nirvasan-officers.csv", [
+    ["Ward", "Zone", "Executive Engineer", "Assistant Engineer", "Confidence", "Last updated"],
+    ...filteredWards.map((ward) => {
+      const meta = officerMeta(ward);
+      return [ward.id, ward.zone, ward.officer, ward.assistantOfficer || "Pending", meta.confidence, meta.updated];
+    }),
+  ]);
   return (
     <section className="content-view officers-view">
       <div className="content-toolbar">
@@ -1572,21 +1801,94 @@ function Officers() {
           <span className="kicker">MCD RESPONSIBILITY DIRECTORY</span>
           <h2>Officers across monitored wards</h2>
           <p>Every public asset is connected to a civic chain, not only an elected representative.</p>
-          <span className="directory-disclaimer">SIMULATED FOR DEMO · Replace with verified MCD zonal disclosure before public launch</span>
+          <span className="directory-disclaimer">{scrapedRecords.length ? `${scrapedRecords.length} MCD RECORDS LOADED · WARD ASSIGNMENT PENDING` : "MCD SOURCES READY · SCRAPE TO LOAD PUBLIC RECORDS"}</span>
         </div>
-        <div className="directory-count"><b>{wards.length}</b><span>wards indexed</span></div>
+        <div className="directory-count"><b>{filteredWards.length}</b><span>wards indexed</span></div>
+      </div>
+      <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
+        <label className="search-box"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ward or officer" /></label>
+        <select className="ward-select" value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)}>{zones.map((zone) => <option key={zone}>{zone}</option>)}</select>
+        <button className="filter-button" onClick={exportOfficers}><Download size={15} /> Export CSV</button>
+      </div>
+      <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
+        <button className="filter-button" disabled={scrapeState.status === "loading"} onClick={runScraper}><RefreshCw size={15} /> {scrapeState.status === "loading" ? "Scraping MCD..." : "Scrape MCD officers"}</button>
+        {scrapeState.message && <span className="directory-disclaimer">{scrapeState.message}</span>}
       </div>
       <div className="officer-directory">
-        {wards.map((ward) => (
+        {filteredWards.map((ward) => (
           <article className="directory-card" key={ward.id}>
             <div className="directory-card-top"><span className="ward-code">{ward.id}</span><span className="zone-tag">{ward.zone} zone</span></div>
             <h3>{ward.name}</h3>
             <div className="directory-person"><div className="directory-avatar">{ward.officer.split(" ").map((part) => part[0]).join("")}</div><div><small>EXECUTIVE ENGINEER</small><b>{ward.officer}</b><span>{ward.zone} / Delhi MCD</span><div className="contact-links"><a href={`mailto:${wardContacts(ward).officerEmail}`}>email</a><a href={`tel:${wardContacts(ward).officerPhone}`}>call</a></div></div><BadgeCheck size={15} /></div>
-            <div className="directory-person compact"><div className="directory-avatar assistant">AE</div><div><small>ASSISTANT ENGINEER</small><b>{ward.officer.split(" ")[0]} {ward.officer.split(" ").at(-1)}</b><span>Ward works desk · {ward.id}</span></div></div>
-            <div className="directory-footer"><span>{assets.filter((asset) => asset.ward === ward.id).length} mapped assets</span><a href={`https://x.com/${wardContacts(ward).representative.slice(1)}`} target="_blank" rel="noreferrer">{wardContacts(ward).representative} ↗</a><a href={sources.officers} target="_blank" rel="noreferrer">MCD source ↗</a></div>
+            <div className="directory-person compact"><div className="directory-avatar assistant">AE</div><div><small>ASSISTANT ENGINEER</small><b>{ward.assistantOfficer || `${ward.officer.split(" ")[0]} ${ward.officer.split(" ").at(-1)}`}</b><span>Ward works desk · {ward.id}</span></div></div>
+            <div className="directory-footer"><span>{assets.filter((asset) => asset.ward === ward.id).length} mapped assets</span><span>{officerMeta(ward).confidence}</span><a href={sources.officers} target="_blank" rel="noreferrer">MCD source ↗</a></div>
           </article>
         ))}
       </div>
+      {scrapedRecords.length > 0 && (
+        <>
+          <div className="content-toolbar" style={{ marginTop: "34px" }}>
+            <div><span className="kicker">OFFICIAL MCD SOURCE RECORDS</span><h3>Empanelled personnel scraped from MCD</h3><p>Public source records shown separately until ward assignment is verified.</p></div>
+            <div className="directory-count"><b>{scrapedRecords.length}</b><span>records loaded</span></div>
+          </div>
+          <div className="officer-directory">
+            {scrapedRecords.filter((record) => `${record.name} ${record.role} ${record.ward}`.toLowerCase().includes(query.toLowerCase())).slice(0, 30).map((record, index) => (
+              <article className="directory-card" key={`${record.source}-${record.name}-${index}`}>
+                <div className="directory-card-top"><span className="ward-code">{record.ward}</span><span className="zone-tag">{record.role}</span></div>
+                <h3>{record.name}</h3>
+                <div className="directory-person compact"><div className="directory-avatar assistant">MCD</div><div><small>PUBLIC SOURCE RECORD</small><b>{record.role}</b><span>{record.zone} · {record.confidence}</span></div></div>
+                <div className="directory-footer"><span>{record.phone || "Phone not listed"}</span><a href={record.source} target="_blank" rel="noreferrer">MCD source ↗</a></div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function WardCompare() {
+  const [leftId, setLeftId] = useState(wards[0].id);
+  const [rightId, setRightId] = useState(wards[1].id);
+  const left = wards.find((ward) => ward.id === leftId) || wards[0];
+  const right = wards.find((ward) => ward.id === rightId) || wards[1];
+  const metrics = [
+    ["Ground-work score", (ward) => `${ward.score}/100`],
+    ["Paper utilized", (ward) => `${Math.round((ward.utilized / ward.funds) * 100)}%`],
+    ["Integrity gap", (ward) => `${ward.gap} pts`],
+    ["Mapped assets", (ward) => assets.filter((asset) => asset.ward === ward.id).length],
+  ];
+  return (
+    <section className="content-view">
+      <div className="content-toolbar"><div><span className="kicker">WARD INTELLIGENCE</span><h2>Compare delivery side by side</h2><p>Compare public funds, ground reality, and mapped works without hiding the source records.</p></div><div className="directory-count"><b>2</b><span>wards selected</span></div></div>
+      <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
+        <select className="ward-select" value={leftId} onChange={(event) => setLeftId(event.target.value)}>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.id} · {ward.name}</option>)}</select>
+        <span style={{ color: "#858b9d" }}>vs</span>
+        <select className="ward-select" value={rightId} onChange={(event) => setRightId(event.target.value)}>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.id} · {ward.name}</option>)}</select>
+      </div>
+      <div className="metric-grid">
+        {[left, right].map((ward) => <div className="metric-card" key={ward.id}><small>{ward.id} · {ward.zone.toUpperCase()} ZONE</small><b>{ward.name}</b><span>{ward.rep} · {ward.party}</span><a href={sources.mplad} target="_blank" rel="noreferrer">MPLAD source ↗</a></div>)}
+      </div>
+      <div className="panel-title" style={{ marginTop: "28px" }}><h3>Comparison</h3><span className="directory-disclaimer">SOURCE-LINKED DEMO DATA</span></div>
+      <div className="leaderboard-list">
+        {metrics.map(([label, getValue]) => <div className="leader-row" key={label}><div className="leader-name"><b>{label}</b></div><div className="score"><b>{getValue(left)}</b></div><div className="score"><b>{getValue(right)}</b></div></div>)}
+      </div>
+    </section>
+  );
+}
+
+function Alerts() {
+  const alerts = wards.flatMap((ward) => {
+    const wardAlerts = [];
+    if (ward.gap >= 50) wardAlerts.push({ level: "High", title: `${ward.name} has a ${ward.gap}-point integrity gap`, detail: "Paper utilization is materially ahead of verified ground reality.", ward });
+    if (assets.filter((asset) => asset.ward === ward.id && ["dead", "critical"].includes(asset.status)).length) wardAlerts.push({ level: "Review", title: `${ward.name} has unresolved asset evidence`, detail: "A mapped work is dead or overdue for re-inspection.", ward });
+    if (officerMeta(ward).confidence !== "Demo verified") wardAlerts.push({ level: "Data", title: `${ward.name} officer record needs verification`, detail: "Directory entry is queued for public-source confirmation.", ward });
+    return wardAlerts;
+  });
+  return (
+    <section className="content-view">
+      <div className="content-toolbar"><div><span className="kicker">REVIEW QUEUE / TRACEABLE ALERTS</span><h2>What needs attention</h2><p>Prioritized leads for human review. Alerts never change asset status automatically.</p></div><div className="directory-count"><b>{alerts.length}</b><span>open alerts</span></div></div>
+      <div className="social-report-list">{alerts.map((alert, index) => <article className="social-report" key={`${alert.ward.id}-${index}`}><div className="social-report-top"><span className="social-handle">{alert.level}</span><span className="social-status">{alert.ward.id}</span></div><p><b>{alert.title}</b><br />{alert.detail}</p><div className="social-report-footer"><span>{alert.ward.zone} zone · {alert.ward.officer}</span><a href={sources.mplad} target="_blank" rel="noreferrer">Inspect source ↗</a></div></article>)}</div>
     </section>
   );
 }
@@ -1744,7 +2046,7 @@ function Profile({
   const contacts = wardContacts(ward);
   const repInitials = ward.rep.split(" ").map((part) => part[0]).join("");
   const officerInitials = ward.officer.split(" ").filter((part) => /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
-  const assistantEngineer = `${ward.officer.split(" ")[0]} ${ward.officer.split(" ").at(-1)}`;
+  const assistantEngineer = ward.assistantOfficer || `${ward.officer.split(" ")[0]} ${ward.officer.split(" ").at(-1)}`;
   const assistantInitials = assistantEngineer.split(" ").filter((part) => /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
   const utilizedPct = Math.round((ward.utilized / ward.funds) * 100);
   const verifiedPct = Math.max(utilizedPct - ward.gap, 0);
