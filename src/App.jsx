@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   MapContainer,
   GeoJSON,
@@ -14,11 +15,52 @@ import civicCandidates from "../data/candidates.json";
 import civicDepartments from "../data/departments_and_officers.json";
 import civicMasterData from "../data/civic_master_data.json";
 import {
+  fetchEvidence,
+  fetchMe,
+  fetchMyEvidence,
+  fetchMyRating,
+  fetchNarrative,
+  fetchSignals,
+  loadLiveData,
+  postRating,
+  requestUploadUrl,
+  reviewEvidence,
+  reviewSignal,
+  submitEvidence,
+  uploadPhoto,
+} from "./api.js";
+import {
+  REVIEW_NOTICE,
+  getPosition,
+  locationLabel,
+  proofPanelState,
+  reviewState,
+  scoreSourceLabel,
+  uploadProof,
+} from "./evidence.js";
+import { ratingAggregate, ratingPanelState } from "./rating.js";
+import { cleanEducation, formatInr, groupDuties, splitWinner, wardParts } from "./civic.js";
+import { buildLocation, parseLocation } from "./route.js";
+import { assetTypeLabel, claimLabel, formatPublished, reviewAccess, safeUrl } from "./signals.js";
+import {
+  authEnabled,
+  confirmSignUp,
+  friendlyError,
+  getIdToken,
+  resendCode,
+  restoreSession,
+  signIn,
+  signOut,
+  signUp,
+  toE164,
+} from "./auth.js";
+import {
   ArrowUpRight,
   BadgeCheck,
   BarChart3,
   Camera,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleAlert,
   Clock3,
@@ -48,6 +90,7 @@ import "./App.css";
 import "./overrides.css";
 import "./clean-layout.css";
 import "./final-ui-overrides.css";
+import "./polish.css";
 
 const sources = {
   wards: "https://github.com/datameet/Municipal_Spatial_Data/tree/master/Delhi",
@@ -1013,11 +1056,6 @@ const downloadCsv = (filename, rows) => {
   link.click();
   URL.revokeObjectURL(url);
 };
-const socialReports = [
-  { id: "X-DEL-021", handle: "@southdelhi_watch", text: "Dark crossing reported again near Nehru Place. Work was marked complete last quarter.", ward: "Kalkaji", time: "18 min ago", status: "Needs review", source: "X public post" },
-  { id: "X-DEL-022", handle: "@rohini_residents", text: "Rohini Sector 9 park pump is running after the repair visit.", ward: "Rohini", time: "43 min ago", status: "Matched to asset", source: "X public post" },
-  { id: "X-DEL-023", handle: "@dwarka_civic", text: "Streetlight upgrade at Sector 10 is visible and working tonight.", ward: "Dwarka", time: "1 hr ago", status: "Matched to asset", source: "X public post" },
-];
 const markerSymbols = {
   Streetlight: "✦",
   "Water pump": "♒",
@@ -1051,6 +1089,7 @@ const realWardNameAliases = {
   "Hauz Khas": "HAUZ KHAS",
   Munirka: "MUNIRKA",
   "Vasant Kunj": "VASANTKUNJ",
+  "Chittaranjan Park": "CHITRANJAN PARK",
   "Karol Bagh": "KAROL BAGH",
   "Model Town": "MODEL TOWN",
   Rohini: "ROHINI",
@@ -1061,6 +1100,16 @@ const realWardNameAliases = {
   "Laxmi Nagar": "LAXMI NAGAR",
   "Mayur Vihar": "MAYUR VIHAR PHASE-I",
   Okhla: "OKHLA",
+  "Patel Nagar": "EAST PATEL NAGAR",
+  "Rajinder Nagar": "RAJENDER NAGAR",
+  Vikaspuri: "VIKAS PURI",
+  "Tilak Nagar": "TILAK NAGAR",
+  "Shalimar Bagh": "SHALIMAR BAGH NORTH",
+  Burari: "BURARI",
+  Mustafabad: "MUSTAFABAD",
+  "Preet Vihar": "PREET VIHAR",
+  Trilokpuri: "TRILOK PURI",
+  Tughlakabad: "TUGHLAKABAD",
 };
 
 const wardShape = (wardId, index, realShapes = {}) => {
@@ -1105,7 +1154,7 @@ function WardFocus({ selectedWard, realShapes }) {
 function WardDatasetLayer({ setSelectedWard, onRealShapes }) {
   const [data, setData] = useState(null);
   useEffect(() => {
-    fetch(sources.wardsGeoJson)
+    fetch("/data/delhi_wards.geojson")
       .then((response) => response.json())
       .then((geojson) => {
         setData(geojson);
@@ -1157,10 +1206,60 @@ function WardDatasetLayer({ setSelectedWard, onRealShapes }) {
   );
 }
 
+// Replaces the bundled arrays in place once the API answers; every view reads
+// these module-level arrays, so a re-render is all that is needed afterwards.
+function applyLiveData(live) {
+  wards.splice(0, wards.length, ...live.wards);
+  assets.splice(0, assets.length, ...live.assets);
+}
+
+// A confirmed photo can change an asset's status; every view reads this array.
+function replaceAsset(updated) {
+  const index = assets.findIndex((asset) => asset.id === updated.id);
+  if (index >= 0) assets[index] = updated;
+}
+
 function App() {
-  const [activeTab, setActiveTab] = useState("Map");
-  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
-  const [selectedWard, setSelectedWard] = useState("All wards");
+  // The address bar says which page is open, so a refresh or a shared link comes back to it.
+  const [initialLocation] = useState(() => parseLocation(window.location.hash));
+  const [activeTab, setActiveTab] = useState(initialLocation.tab);
+  const [dataSource, setDataSource] = useState("bundled demo data");
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    if (!authEnabled) return;
+    restoreSession().then((session) => session && setUser(session.user));
+  }, []);
+  // The login is saved once per browser, so another tab signing in or out changes who
+  // this tab's API calls act as. Follow it so the screen always shows that person.
+  useEffect(() => {
+    if (!authEnabled) return undefined;
+    const follow = (event) => {
+      if (event.key && !event.key.startsWith("CognitoIdentityServiceProvider")) return;
+      restoreSession().then((session) => {
+        const next = session ? session.user : null;
+        setUser((current) => ((current?.id ?? null) === (next?.id ?? null) ? current : next));
+      });
+    };
+    window.addEventListener("storage", follow);
+    return () => window.removeEventListener("storage", follow);
+  }, []);
+  const [selectedAsset, setSelectedAsset] = useState(() => assets.find((asset) => asset.id === initialLocation.asset) ?? assets[0]);
+  const [, setDataVersion] = useState(0);
+  // Reloaded on every tab change, so a photo confirmed a moment ago shows up in the scores.
+  useEffect(() => {
+    let cancelled = false;
+    loadLiveData().then((live) => {
+      if (cancelled || !live) return;
+      applyLiveData(live);
+      setSelectedAsset((current) => assets.find((asset) => asset.id === current.id) ?? current);
+      setDataSource("live API");
+      setDataVersion((version) => version + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+  const [selectedWard, setSelectedWard] = useState(initialLocation.ward ?? "All wards");
   const [menuOpen, setMenuOpen] = useState(false);
   const [proofSubmitted, setProofSubmitted] = useState(false);
   const [rating, setRating] = useState(0);
@@ -1177,6 +1276,29 @@ function App() {
       wards.find((ward) => ward.name === selectedWard)) ||
     wards.find((ward) => ward.id === selectedAsset.ward) ||
     wards[0];
+  // Keep the address in step with the page. A change of page adds a history entry (so Back works);
+  // changing the ward or asset on the same page only updates the current one.
+  const lastTab = useRef(activeTab);
+  const wardForUrl = activeTab === "Rep Profile" ? currentWard?.name : selectedWard;
+  const assetForUrl = selectedAsset?.id;
+  useEffect(() => {
+    const target = buildLocation({ tab: activeTab, ward: wardForUrl, asset: assetForUrl });
+    const current = window.location.hash;
+    const changedPage = lastTab.current !== activeTab;
+    lastTab.current = activeTab;
+    if (current === target || (!current && target === "#/map")) return;
+    window.history[changedPage ? "pushState" : "replaceState"](null, "", target);
+  }, [activeTab, wardForUrl, assetForUrl]);
+  useEffect(() => {
+    const follow = () => {
+      const next = parseLocation(window.location.hash);
+      setActiveTab(next.tab);
+      if (next.ward !== null || next.tab === "Map" || next.tab === "Rep Profile") setSelectedWard(next.ward ?? "All wards");
+      if (next.asset) setSelectedAsset((current) => assets.find((asset) => asset.id === next.asset) ?? current);
+    };
+    window.addEventListener("popstate", follow);
+    return () => window.removeEventListener("popstate", follow);
+  }, []);
   const tabs = [
     { name: "Map", icon: MapPin },
     { name: "Leaderboard", icon: BarChart3 },
@@ -1246,7 +1368,7 @@ function App() {
             <span>Verified citizen</span>
           </button>
           <div className="user-pill">
-            <span className="online-dot" /> Citizen{" "}
+            <span className="online-dot" /> {user ? user.name : "Citizen"}{" "}
             <ChevronRight size={15} />
           </div>
         </div>
@@ -1272,7 +1394,7 @@ function App() {
               <span /> LIVE
             </span>
             <span className="update-time">
-              Last sync {formattedSyncDate} · {formattedSyncTime} IST
+              Last sync {formattedSyncDate} · {formattedSyncTime} IST · data: {dataSource}
             </span>
           </div>
         </div>
@@ -1300,10 +1422,13 @@ function App() {
             setRating={setRating}
             ratingSubmitted={ratingSubmitted}
             setRatingSubmitted={setRatingSubmitted}
+            user={user}
+            setActiveTab={setActiveTab}
+            setSelectedWard={setSelectedWard}
           />
         )}
         {activeTab === "Officers" && <Officers />}
-        {activeTab === "Social Watch" && <SocialWatch />}
+        {activeTab === "Social Watch" && <SocialWatch user={user} setActiveTab={setActiveTab} />}
         {activeTab === "Report Asset" && (
           <ReportView
             reportImage={reportImage}
@@ -1318,10 +1443,12 @@ function App() {
             setSelectedAsset={setSelectedAsset}
             submitted={proofSubmitted}
             setSubmitted={setProofSubmitted}
+            user={user}
+            setActiveTab={setActiveTab}
           />
         )}
         {activeTab === "Login / Signup" && (
-          <AuthView mode={authMode} setMode={setAuthMode} />
+          <AuthView mode={authMode} setMode={setAuthMode} user={user} setUser={setUser} />
         )}
       </main>
       <footer className="app-footer">
@@ -1421,15 +1548,13 @@ function MapView({
         </div>
         <div className="ward-select">
           <Filter size={14} />
-          <select
+          <SelectMenu
+            ariaLabel="Filter by ward"
+            className="select-plain"
             value={selectedWard}
-            onChange={(event) => setSelectedWard(event.target.value)}
-          >
-            <option>All wards</option>
-            {wards.map((ward) => (
-              <option key={ward.id}>{ward.name}</option>
-            ))}
-          </select>
+            onChange={setSelectedWard}
+            options={[{ value: "All wards", label: "All wards" }, ...wards.map((ward) => ({ value: ward.name, label: ward.name }))]}
+          />
         </div>
         {filterOpen && (
           <div className="choice-grid" style={{ flexWrap: "wrap", marginTop: "8px" }}>
@@ -1656,6 +1781,137 @@ function MapView({
   );
 }
 
+// A dropdown that opens below its button (a native <select> flips upwards whenever the browser
+// thinks there is little room) and scrolls inside a list sized to the space left on screen.
+function SelectMenu({ value, options, onChange, ariaLabel, className = "", disabled = false, listMinWidth = 200 }) {
+  const [place, setPlace] = useState(null);
+  const [active, setActive] = useState(0);
+  const trigger = useRef(null);
+  const list = useRef(null);
+  const typed = useRef({ text: "", at: 0 });
+  const open = place !== null;
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+
+  const close = (refocus) => {
+    setPlace(null);
+    if (refocus) trigger.current?.focus();
+  };
+  const choose = (index) => {
+    if (options[index]) onChange(options[index].value);
+    close(true);
+  };
+  const openMenu = () => {
+    const rect = trigger.current.getBoundingClientRect();
+    const below = window.innerHeight - rect.bottom - 16;
+    const above = rect.top - 16;
+    const flip = below < 140 && above > below;
+    const room = flip ? above : below;
+    setActive(selectedIndex);
+    const width = Math.min(Math.max(rect.width, listMinWidth), window.innerWidth - 16);
+    setPlace({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      width,
+      maxHeight: Math.max(120, Math.min(320, room)),
+      ...(flip ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    list.current?.focus({ preventScroll: true });
+    const away = (event) => {
+      if (!list.current?.contains(event.target) && !trigger.current?.contains(event.target)) setPlace(null);
+    };
+    const drift = (event) => {
+      if (!list.current?.contains(event.target)) setPlace(null);
+    };
+    document.addEventListener("mousedown", away);
+    window.addEventListener("scroll", drift, true);
+    window.addEventListener("resize", drift);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      window.removeEventListener("scroll", drift, true);
+      window.removeEventListener("resize", drift);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) list.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
+
+  const onListKey = (event) => {
+    const last = options.length - 1;
+    if (event.key === "ArrowDown") setActive((index) => Math.min(last, index + 1));
+    else if (event.key === "ArrowUp") setActive((index) => Math.max(0, index - 1));
+    else if (event.key === "Home") setActive(0);
+    else if (event.key === "End") setActive(last);
+    else if (event.key === "Enter" || event.key === " ") choose(active);
+    else if (event.key === "Escape") close(true);
+    else if (event.key === "Tab") close(false);
+    else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+      const now = event.timeStamp;
+      typed.current = { text: (now - typed.current.at < 700 ? typed.current.text : "") + event.key.toLowerCase(), at: now };
+      const hit = options.findIndex((option) => String(option.label).toLowerCase().startsWith(typed.current.text));
+      if (hit >= 0) setActive(hit);
+      return;
+    } else return;
+    event.preventDefault();
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        ref={trigger}
+        className={`select-trigger ${className}`}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => (open ? close(false) : openMenu())}
+        onKeyDown={(event) => {
+          if (!open && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+            event.preventDefault();
+            openMenu();
+          }
+        }}
+      >
+        <span className="select-value">{options[selectedIndex]?.label}</span>
+        <ChevronDown size={14} className={open ? "select-chevron open" : "select-chevron"} />
+      </button>
+      {open &&
+        createPortal(
+          <ul
+            ref={list}
+            className="select-list"
+            role="listbox"
+            tabIndex={-1}
+            aria-label={ariaLabel}
+            style={place}
+            onKeyDown={onListKey}
+          >
+            {options.map((option, index) => (
+              <li
+                key={option.value}
+                data-index={index}
+                role="option"
+                aria-selected={index === selectedIndex}
+                className={`select-option${index === active ? " active" : ""}${index === selectedIndex ? " selected" : ""}`}
+                onMouseEnter={() => setActive(index)}
+                onClick={() => choose(index)}
+              >
+                <span className="select-option-text">{option.label}</span>
+                {option.hint && <em className="select-hint">{option.hint}</em>}
+                {index === selectedIndex && <Check size={13} />}
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) {
   const contacts = wardContacts(ward);
   const repInitials = ward.rep.split(" ").map((part) => part[0]).join("");
@@ -1689,6 +1945,7 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
           <X size={17} />
         </button>
       </div>
+      <div className="drawer-col drawer-col-asset">
       <div className="drawer-title">
         <div className="asset-type-icon">
           <span className={`drawer-symbol drawer-symbol-${asset.status}`}>
@@ -1758,6 +2015,8 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
           </>
         )}
       </div>
+      </div>
+      <div className="drawer-col drawer-col-brief">
       <div className="ground-note">
         <div className="note-heading">
           <Sparkles size={15} /> GROUNDED AI BRIEF <span>cached</span>
@@ -1767,6 +2026,14 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
           <FileText size={12} /> {asset.source}
         </small>
       </div>
+      <div className="sources-link">
+        <ShieldCheck size={14} /> <span>Sources for this claim</span>
+        <a href={sources.mplad} target="_blank" rel="noreferrer">
+          MPLAD raw record ↗
+        </a>
+      </div>
+      </div>
+      <div className="drawer-col drawer-col-people">
       <div className="responsibility">
         <div className="responsibility-heading">
           ACCOUNTABILITY CHAIN <ArrowUpRight size={15} />
@@ -1802,11 +2069,6 @@ function AssetDrawer({ asset, ward, open, onClose, onViewProfile, onAddProof }) 
           View profile <ChevronRight size={15} />
         </button>
       </div>
-      <div className="sources-link">
-        <ShieldCheck size={14} /> <span>Sources for this claim</span>
-        <a href={sources.mplad} target="_blank" rel="noreferrer">
-          MPLAD raw record ↗
-        </a>
       </div>
     </aside>
   );
@@ -1865,7 +2127,7 @@ function Officers() {
       </div>
       <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
         <label className="search-box"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ward or officer" /></label>
-        <select className="ward-select" value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)}>{zones.map((zone) => <option key={zone}>{zone}</option>)}</select>
+        <SelectMenu ariaLabel="Filter by zone" className="select-box" value={zoneFilter} onChange={setZoneFilter} options={zones.map((zone) => ({ value: zone, label: zone }))} />
         <button className="filter-button" onClick={exportOfficers}><Download size={15} /> Export CSV</button>
       </div>
       <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
@@ -1910,6 +2172,7 @@ function WardCompare() {
   const [rightId, setRightId] = useState(wards[1].id);
   const left = wards.find((ward) => ward.id === leftId) || wards[0];
   const right = wards.find((ward) => ward.id === rightId) || wards[1];
+  const wardOptions = wards.map((ward) => ({ value: ward.id, label: `${ward.id} · ${ward.name}` }));
   const metrics = [
     ["Ground-work score", (ward) => `${ward.score}/100`],
     ["Paper utilized", (ward) => `${Math.round((ward.utilized / ward.funds) * 100)}%`],
@@ -1920,9 +2183,9 @@ function WardCompare() {
     <section className="content-view">
       <div className="content-toolbar"><div><span className="kicker">WARD INTELLIGENCE</span><h2>Compare delivery side by side</h2><p>Compare public funds, ground reality, and mapped works without hiding the source records.</p></div><div className="directory-count"><b>2</b><span>wards selected</span></div></div>
       <div className="toolbar-actions" style={{ marginBottom: "18px" }}>
-        <select className="ward-select" value={leftId} onChange={(event) => setLeftId(event.target.value)}>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.id} · {ward.name}</option>)}</select>
+        <SelectMenu ariaLabel="First ward" className="select-box" value={leftId} onChange={setLeftId} options={wardOptions} />
         <span style={{ color: "#858b9d" }}>vs</span>
-        <select className="ward-select" value={rightId} onChange={(event) => setRightId(event.target.value)}>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.id} · {ward.name}</option>)}</select>
+        <SelectMenu ariaLabel="Second ward" className="select-box" value={rightId} onChange={setRightId} options={wardOptions} />
       </div>
       <div className="metric-grid">
         {[left, right].map((ward) => <div className="metric-card" key={ward.id}><small>{ward.id} · {ward.zone.toUpperCase()} ZONE</small><b>{ward.name}</b><span>{ward.rep} · {ward.party}</span><a href={sources.mplad} target="_blank" rel="noreferrer">MPLAD source ↗</a></div>)}
@@ -1964,62 +2227,291 @@ function CivicData() {
   const joinedRecords = civicMasterData.filter((record) =>
     `${record.ward_or_constituency} ${record.politician?.full_name || ""}`.toLowerCase().includes(normalizedQuery),
   );
+  const counts = {
+    candidates: [candidates.length, civicCandidates.length, "candidates"],
+    departments: [departments.length, civicDepartments.length, "departments"],
+    joined: [joinedRecords.length, civicMasterData.length, "joined records"],
+  }[view];
   return (
-    <section className="content-view">
+    <section className="content-view civic-view">
       <div className="content-toolbar">
         <div>
-          <span className="kicker">OPTIONAL DATA LAYER / LOCAL JSON</span>
           <h2>Political context meets civic duty</h2>
-          <p>Inspect scraped candidate records, department responsibilities, and merged ward context without changing core map data.</p>
+          <p>Public candidate records, department responsibilities and ward context, side by side.</p>
         </div>
         <div className="directory-count"><b>{civicCandidates.length + civicDepartments.length}</b><span>source records</span></div>
       </div>
-      <div className="metric-grid">
+      <div className="metric-grid civic-metrics">
         <button className={view === "candidates" ? "metric-card highlight" : "metric-card"} onClick={() => setView("candidates")}>
-          <small>CANDIDATE DATA</small><b>{civicCandidates.length}</b><span>MyNeta records loaded</span>
+          <small><Users size={13} /> CANDIDATE DATA</small><b>{civicCandidates.length}</b><span>MyNeta records loaded</span>
         </button>
         <button className={view === "departments" ? "metric-card highlight" : "metric-card"} onClick={() => setView("departments")}>
-          <small>RESPONSIBILITY MATRIX</small><b>{civicDepartments.length}</b><span>urban sectors defined</span>
+          <small><Building2 size={13} /> RESPONSIBILITY MATRIX</small><b>{civicDepartments.length}</b><span>urban sectors defined</span>
         </button>
         <button className={view === "joined" ? "metric-card highlight" : "metric-card"} onClick={() => setView("joined")}>
-          <small>MERGED CONTEXT</small><b>{civicMasterData.length}</b><span>ward / constituency joins</span>
+          <small><Database size={13} /> MERGED CONTEXT</small><b>{civicMasterData.length}</b><span>ward / constituency joins</span>
         </button>
-        <div className="metric-card"><small>PIPELINE</small><b>LOCAL</b><span>Run Python scripts to refresh</span></div>
+        <div className="metric-card">
+          <small><ShieldCheck size={13} /> DATA SOURCES</small><b>PUBLIC</b><span>MyNeta · MCD · DataMeet</span>
+        </div>
       </div>
-      <div className="toolbar-actions" style={{ margin: "24px 0 18px" }}>
+      <div className="toolbar-actions" style={{ margin: "24px 0 12px" }}>
         <label className="search-box"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search civic data" /></label>
         <button className={view === "candidates" ? "filter-button active" : "filter-button"} onClick={() => setView("candidates")}><Users size={15} /> Candidates</button>
         <button className={view === "departments" ? "filter-button active" : "filter-button"} onClick={() => setView("departments")}><Building2 size={15} /> Departments</button>
         <button className={view === "joined" ? "filter-button active" : "filter-button"} onClick={() => setView("joined")}><Database size={15} /> Joined records</button>
       </div>
+      <p className="civic-count">Showing {counts[0]} of {counts[1]} {counts[2]}</p>
       {view === "candidates" && (
-        <div className="social-report-list">
-          {!candidates.length && <div className="social-note"><Info size={16} /><div><b>No candidate records loaded</b><span>Run `scripts/scrape_myneta.py` with a public MyNeta election page, then rebuild or refresh this app.</span></div></div>}
-          {candidates.map((candidate) => <article className="social-report" key={candidate.id}><div className="social-report-top"><span className="social-handle">{candidate.full_name}</span><span className="social-status">{candidate.party || "Party unavailable"}</span></div><p>{candidate.constituency_or_ward || "Constituency unavailable"}</p><div className="social-report-footer"><span>{candidate.election_year || "Year unavailable"} · {candidate.education_qualification || "Education unavailable"}</span>{candidate.affidavit_url && <a href={candidate.affidavit_url} target="_blank" rel="noreferrer">Affidavit ↗</a>}</div></article>)}
+        <div className="civic-grid">
+          {!candidates.length && <div className="social-note"><Info size={16} /><div><b>No candidate records match</b><span>Try a different name, party or ward.</span></div></div>}
+          {candidates.map((candidate) => {
+            const { name, winner } = splitWinner(candidate.full_name);
+            const ward = wardParts(candidate.constituency_or_ward);
+            const education = cleanEducation(candidate.education_qualification);
+            return (
+              <article className="civic-tile" key={candidate.id}>
+                <header>
+                  <div className="civic-title"><b>{name}</b>{winner && <em>Winner</em>}</div>
+                  <span className="civic-tag">{candidate.party || "Party n/a"}</span>
+                </header>
+                <div className="civic-place">{ward.name}{ward.number && <span>Ward {ward.number}</span>}</div>
+                <dl className="civic-facts">
+                  <div><dt>Education</dt><dd className="clamp" title={education}>{education}</dd></div>
+                  <div><dt>Declared assets</dt><dd>{formatInr(candidate.total_assets_inr)}</dd></div>
+                </dl>
+                <footer>
+                  <span>{candidate.election_year || "Year n/a"} MCD election</span>
+                  {candidate.source_url && <a href={candidate.source_url} target="_blank" rel="noreferrer noopener">MyNeta record ↗</a>}
+                </footer>
+              </article>
+            );
+          })}
         </div>
       )}
       {view === "departments" && (
-        <div className="officer-directory">
-          {departments.map((department) => <article className="directory-card" key={department.department_id}><div className="directory-card-top"><span className="ward-code">{department.department_id}</span><span className="zone-tag">{department.category}</span></div><h3>{department.department_name}</h3>{department.officer_roles.map((role) => <div className="directory-person compact" key={role.role_id}><div className="directory-avatar assistant">{role.designation.split(" ").slice(0, 2).map((part) => part[0]).join("")}</div><div><small>{role.jurisdiction}</small><b>{role.designation}</b><span>{role.responsibilities.join(" · ")}</span></div></div>)}<div className="directory-footer"><span>{department.officer_roles.length} officer roles</span><span>{department.service_keywords.slice(0, 2).join(" · ")}</span></div></article>)}
+        <div className="civic-grid">
+          {!departments.length && <div className="social-note"><Info size={16} /><div><b>No departments match</b><span>Try a service word such as streetlight, road or water.</span></div></div>}
+          {departments.map((department) => (
+            <article className="civic-tile" key={department.department_id}>
+              <header className="stacked">
+                <span className="civic-code">{department.department_id}</span>
+                <span className="civic-tag">{department.category}</span>
+              </header>
+              <h3>{department.department_name}</h3>
+              <div className="civic-roles">
+                {department.officer_roles.map((role) => (
+                  <div className="civic-role" key={role.role_id}>
+                    <div className="civic-role-head"><b>{role.designation}</b><span>{role.jurisdiction}</span></div>
+                    <ul>{role.responsibilities.map((duty) => <li key={duty}>{duty}</li>)}</ul>
+                  </div>
+                ))}
+              </div>
+              <footer>
+                <span>{department.officer_roles.length} officer roles</span>
+                <div className="civic-keywords">{department.service_keywords.slice(0, 4).map((word) => <span key={word}>{word}</span>)}</div>
+              </footer>
+            </article>
+          ))}
         </div>
       )}
       {view === "joined" && (
-        <div className="social-report-list">
-          {!joinedRecords.length && <div className="social-note"><Info size={16} /><div><b>No joined records yet</b><span>Candidate and department records join after the Python merge script runs with candidate data.</span></div></div>}
-          {joinedRecords.map((record) => <article className="social-report" key={`${record.ward_or_constituency}-${record.politician.id}`}><div className="social-report-top"><span className="social-handle">{record.ward_or_constituency}</span><span className="social-status">{record.politician.full_name}</span></div><p>{record.responsible_departments.map((department) => department.officer_title).join(" · ")}</p><div className="social-report-footer"><span>{record.responsible_departments.length} linked duties</span></div></article>)}
+        <div className="civic-grid">
+          {!joinedRecords.length && <div className="social-note"><Info size={16} /><div><b>No joined records match</b><span>Try a ward name or a candidate's name.</span></div></div>}
+          {joinedRecords.map((record) => {
+            const { name, winner } = splitWinner(record.politician.full_name);
+            const ward = wardParts(record.ward_or_constituency);
+            return (
+              <article className="civic-tile" key={`${record.ward_or_constituency}-${record.politician.id}`}>
+                <header>
+                  <span className="civic-code">{ward.number ? `Ward ${ward.number}` : "Ward"}</span>
+                  <span className="civic-tag">{record.politician.party || "Party n/a"}</span>
+                </header>
+                <h3>{ward.name}</h3>
+                <div className="civic-place">{name}{winner && <em className="civic-winner">Winner</em>}</div>
+                <ul className="civic-chain">
+                  {groupDuties(record).map((group) => (
+                    <li key={group.department}><span>{group.department}</span><b>{group.roles} {group.roles === 1 ? "role" : "roles"}</b></li>
+                  ))}
+                </ul>
+                <footer><span>{record.responsible_departments.length} linked duties across {groupDuties(record).length} departments</span></footer>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-function SocialWatch() {
+function SocialWatch({ user, setActiveTab }) {
+  const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [refresh, setRefresh] = useState(0);
+  const [picked, setPicked] = useState({});
+  const [busy, setBusy] = useState("");
+  const [problem, setProblem] = useState("");
+  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    fetchSignals()
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setLoadError("");
+      })
+      .catch((error) => !cancelled && setLoadError(error.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [refresh]);
+  const decide = async (signal, decision) => {
+    setBusy(signal.signal_id);
+    setProblem("");
+    setNotice("");
+    try {
+      const payload =
+        decision === "link"
+          ? { decision, asset_id: picked[signal.signal_id] ?? signal.candidate_assets[0]?.asset_id }
+          : { decision };
+      await reviewSignal(await getIdToken(), signal.signal_id, payload);
+      setNotice(
+        decision === "link"
+          ? "Linked. The report now points at that asset; the asset's status and the ward's score are unchanged."
+          : "Dismissed. Thank you for reviewing.",
+      );
+      setRefresh((count) => count + 1);
+    } catch (error) {
+      setProblem(error.message);
+    } finally {
+      setBusy("");
+    }
+  };
+  const snapshot = data?.pipeline?.origin === "rss_snapshot";
+  const muted = { color: "#858b9d", fontSize: "11px", lineHeight: 1.6, margin: "10px 0" };
   return (
     <section className="content-view social-watch-view">
-      <div className="content-toolbar"><div><span className="kicker">PUBLIC SIGNALS / AWS-READY</span><h2>Social Watch</h2><p>Public posts can become leads for civic verification, never automatic truth.</p><span className="directory-disclaimer">X API ingestion requires AWS Lambda + Secrets Manager</span></div><div className="directory-count"><b>{socialReports.length}</b><span>signals queued</span></div></div>
-      <div className="social-pipeline"><span>Public X post</span><ChevronRight size={15}/><span>EventBridge schedule</span><ChevronRight size={15}/><span>Lambda normalizer</span><ChevronRight size={15}/><span>Ward match</span><ChevronRight size={15}/><span>Human review</span></div>
-      <div className="social-report-list">{socialReports.map((report) => <article className="social-report" key={report.id}><div className="social-report-top"><span className="social-handle">{report.handle}</span><span className="social-status">{report.status}</span></div><p>{report.text}</p><div className="social-report-footer"><span>{report.id} · {report.time}</span><span>{report.ward}</span><a href="https://developer.x.com/en/docs/x-api" target="_blank" rel="noreferrer">{report.source} ↗</a></div></article>)}</div>
-      <div className="social-note"><ShieldCheck size={16}/><div><b>Traceability rule</b><span>A social post creates a review lead. It does not change an asset status or score until a geo-checked photo or officer confirmation is stored.</span></div></div>
+      <div className="content-toolbar">
+        <div>
+          <span className="kicker">PUBLIC SIGNALS / NEWS REPORTS</span>
+          <h2>Social Watch</h2>
+          <p>Public reports can become leads for civic verification, never automatic truth.</p>
+          <span className="directory-disclaimer">
+            {!data
+              ? "READING REAL NEWS HEADLINES"
+              : snapshot
+                ? `REAL NEWS HEADLINES · SNAPSHOT FROM ${formatPublished(data.pipeline.fetched_at).toUpperCase()}`
+                : "LIVE NEWS FEED"}
+          </span>
+        </div>
+        <div className="directory-count">
+          <b>{data ? data.count : "–"}</b>
+          <span>reports</span>
+        </div>
+      </div>
+      {!data && !loadError && <p style={muted}>Reading the latest headlines…</p>}
+      {!data && loadError && (
+        <p style={muted}>Could not load reports: {loadError}. They load from the live API, so they do not appear on bundled demo data.</p>
+      )}
+      {data && data.count === 0 && <p style={muted}>No reports match right now.</p>}
+      {problem && <div className="auth-error">{problem}</div>}
+      {notice && <p style={muted}>{notice}</p>}
+      <div className="social-report-list">
+        {data?.items.map((signal) => {
+          const access = reviewAccess({ signal, user });
+          const candidates = signal.candidate_assets;
+          const typeName = assetTypeLabel(signal.analysis.asset_type);
+          const stateText =
+            signal.review_state === "linked"
+              ? `Linked to ${signal.linked_asset_id}`
+              : signal.review_state === "dismissed"
+                ? "Dismissed"
+                : "Awaiting review";
+          return (
+            <article className="social-report" key={signal.signal_id}>
+              <div className="social-report-top">
+                <span className="social-handle">{signal.source}</span>
+                <span className="social-status">{stateText}</span>
+              </div>
+              <p>
+                <a className="signal-title" href={safeUrl(signal.url)} target="_blank" rel="noreferrer noopener">
+                  {signal.title}
+                </a>
+              </p>
+              <div className="signal-tags">
+                <span>{typeName}</span>
+                <span>{claimLabel(signal.analysis.claim)}</span>
+                <span>{signal.ward ? signal.ward.name : "Citywide · no ward match"}</span>
+              </div>
+              {signal.analysis.summary && (
+                <p className="signal-summary">
+                  <b>AI summary</b> {signal.analysis.summary}
+                </p>
+              )}
+              <div className="social-report-footer">
+                <span>{formatPublished(signal.published_at)}</span>
+                <span>Read at {signal.source} ↗</span>
+              </div>
+              {access === "review" && (
+                <div className="signal-review">
+                  {candidates.length > 0 ? (
+                    <>
+                      <select
+                        aria-label="Asset to link"
+                        value={picked[signal.signal_id] ?? candidates[0].asset_id}
+                        onChange={(event) => setPicked((state) => ({ ...state, [signal.signal_id]: event.target.value }))}
+                      >
+                        {candidates.map((asset) => (
+                          <option key={asset.asset_id} value={asset.asset_id}>
+                            {asset.asset_id} · {asset.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button disabled={Boolean(busy)} onClick={() => decide(signal, "link")}>
+                        {busy === signal.signal_id ? "Saving…" : "Link to asset"}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="review-note">
+                      {signal.analysis.asset_type === "none"
+                        ? "Not about one of the six tracked asset types, so there is nothing to link."
+                        : `No ${typeName.toLowerCase()} is tracked in ${signal.ward.name}, so there is nothing to link.`}
+                    </span>
+                  )}
+                  <button className="dispute" disabled={Boolean(busy)} onClick={() => decide(signal, "dismiss")}>
+                    Dismiss
+                  </button>
+                </div>
+              )}
+              {access === "sign-in" && (
+                <p className="review-note">
+                  Sign in as a citizen of {signal.ward.name} to review this report.{" "}
+                  <button className="link-button" onClick={() => setActiveTab("Login / Signup")}>
+                    Sign in
+                  </button>
+                </p>
+              )}
+              {access === "other-ward" && (
+                <p className="review-note">Only citizens of {signal.ward.name} can review this report.</p>
+              )}
+              {access === "citywide" && (
+                <p className="review-note">No ward is named, so this stays a citywide lead.</p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      <div className="social-note">
+        <ShieldCheck size={16} />
+        <div>
+          <b>Traceability rule</b>
+          <span>
+            A report creates a review lead. It does not change an asset status or score until a geo-checked photo or
+            officer confirmation is stored. Only the headline, source, link and date are kept; the article stays with the
+            publisher.
+          </span>
+        </div>
+      </div>
     </section>
   );
 }
@@ -2089,7 +2581,10 @@ function Leaderboard({ setActiveTab, setSelectedWard }) {
           Score = 40% share of assets with photo-verified working status + 35%
           normalized paper utilization rate + 25% normalized citizen rating,
           per ward. Every input traces back to a specific record — open a
-          profile to see the exact figures behind a given ward's score.
+          profile to see the exact figures behind a given ward's score. When
+          live data is on, an asset counts as verified once a second citizen
+          confirms its photo; a ward's seeded baseline gives way to that evidence
+          as verified assets accumulate (fully at 3), and tagged wards show it.
         </p>
       )}
       <div className="leaderboard-list">
@@ -2119,6 +2614,7 @@ function Leaderboard({ setActiveTab, setSelectedWard }) {
               <span>
                 Ward {ward.id.replace("W-", "")} · {ward.name}{" "}
                 <i>{ward.party}</i>
+                {scoreSourceLabel(ward) && <em className="source-tag">{scoreSourceLabel(ward)}</em>}
               </span>
             </div>
             <div className="leader-stat">
@@ -2162,7 +2658,69 @@ function Profile({
   setRating,
   ratingSubmitted,
   setRatingSubmitted,
+  user,
+  setActiveTab,
+  setSelectedWard,
 }) {
+  // Ratings are real (stored in DynamoDB) when the ward came from the API.
+  const fromApi = Boolean(ward.wardId);
+  // Rating state is kept per citizen and ward, so switching wards needs no reset.
+  const ratingKey = `${user?.id ?? "anon"}:${ward.wardId ?? ward.id}`;
+  const [ratingState, setRatingState] = useState({});
+  const [rateBusy, setRateBusy] = useState(false);
+  const { myRating, picked = 0, aggregate = null, rateError = "" } = ratingState[ratingKey] ?? {};
+  const patchRating = (changes) =>
+    setRatingState((state) => ({ ...state, [ratingKey]: { ...state[ratingKey], ...changes } }));
+  const setPicked = (stars) => patchRating({ picked: stars });
+  useEffect(() => {
+    if (!authEnabled || !user || user.wardId !== ward.wardId) return undefined;
+    let cancelled = false;
+    const key = `${user.id}:${ward.wardId}`;
+    const save = (changes) =>
+      !cancelled && setRatingState((state) => ({ ...state, [key]: { ...state[key], ...changes } }));
+    getIdToken()
+      .then((token) => fetchMyRating(token))
+      .then((result) => save({ myRating: result.stars || null }))
+      .catch(() => save({ myRating: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, [user, ward.wardId]);
+  const panel = ratingPanelState({
+    live: authEnabled && fromApi,
+    signedIn: Boolean(user),
+    userWardId: user?.wardId,
+    wardId: ward.wardId,
+    myRating,
+  });
+  const submitRating = async () => {
+    setRateBusy(true);
+    patchRating({ rateError: "" });
+    try {
+      const result = await postRating(await getIdToken(), picked);
+      patchRating({ myRating: result.stars, aggregate: { count: result.count, average: result.average } });
+    } catch (problem) {
+      patchRating({ rateError: problem.message });
+    } finally {
+      setRateBusy(false);
+    }
+  };
+  const realRating = aggregate ?? ratingAggregate(ward);
+  // The ward summary is written by the API from this ward's verified figures.
+  const [narratives, setNarratives] = useState({});
+  const narrative = narratives[ward.wardId];
+  useEffect(() => {
+    if (!ward.wardId) return undefined;
+    let cancelled = false;
+    const wardId = ward.wardId;
+    const save = (result) => !cancelled && setNarratives((state) => ({ ...state, [wardId]: result }));
+    fetchNarrative(wardId)
+      .then(save)
+      .catch(() => save({ failed: true }));
+    return () => {
+      cancelled = true;
+    };
+  }, [ward.wardId, ward.score]);
   const contacts = wardContacts(ward);
   const repInitials = ward.rep.split(" ").map((part) => part[0]).join("");
   const officerInitials = ward.officer.split(" ").filter((part) => /[A-Za-z]/.test(part)).map((part) => part[0]).join("").slice(0, 2);
@@ -2199,6 +2757,7 @@ function Profile({
           <div className="score-track">
             <i style={{ width: `${ward.score}%` }} />
           </div>
+          {scoreSourceLabel(ward) && <span className="source-tag">{scoreSourceLabel(ward)}</span>}
           <a href={sources.mplad} target="_blank" rel="noreferrer">
             Why this score? ↗
           </a>
@@ -2235,9 +2794,15 @@ function Profile({
         <div className="metric-card">
           <small>CITIZEN RATING</small>
           <b>
-            {citizenRating}<span>/5</span>
+            {fromApi ? realRating.average ?? "—" : citizenRating}<span>/5</span>
           </b>
-          <span>{ratingCount} ward-verified ratings</span>
+          <span>
+            {fromApi
+              ? realRating.count
+                ? `${realRating.count} ward-verified ${realRating.count === 1 ? "rating" : "ratings"}`
+                : "No ratings yet"
+              : `${ratingCount} ward-verified ratings`}
+          </span>
           <button
             onClick={() =>
               document.getElementById("rate-box")?.scrollIntoView()
@@ -2247,6 +2812,17 @@ function Profile({
           </button>
         </div>
       </div>
+      {fromApi && !narrative?.failed && (
+        <div className="ward-summary">
+          <span className="kicker">
+            WARD SUMMARY · {!narrative ? "WRITING" : narrative.source === "ai" ? "AI-WRITTEN" : "AUTO-GENERATED"}
+          </span>
+          <p>{narrative ? narrative.text : "Writing a short summary from this ward's verified figures…"}</p>
+          <small>
+            Built only from the figures on this page. It describes the gap between records and citizen evidence, not a finding of wrongdoing.
+          </small>
+        </div>
+      )}
       <div className="profile-columns">
         <div className="timeline-panel">
           <div className="panel-title">
@@ -2347,34 +2923,74 @@ function Profile({
               </div>
               <Star size={17} />
             </div>
-            <div className="stars">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  className={rating >= value ? "star active" : "star"}
-                  onClick={() => setRating(value)}
-                >
-                  <Star
-                    size={20}
-                    fill={rating >= value ? "currentColor" : "none"}
-                  />
+            {panel === "demo" || panel === "can-rate" || panel === "rated" ? (
+              <div className="stars">
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const shown = panel === "demo" ? rating : panel === "rated" ? myRating : picked;
+                  return (
+                    <button
+                      key={value}
+                      disabled={panel === "rated"}
+                      className={shown >= value ? "star active" : "star"}
+                      onClick={() => (panel === "demo" ? setRating(value) : setPicked(value))}
+                    >
+                      <Star size={20} fill={shown >= value ? "currentColor" : "none"} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {panel === "demo" &&
+              (ratingSubmitted ? (
+                <div className="rating-confirm">
+                  <Check size={15} /> Rating saved for Ward {ward.id.replace("W-", "")}
+                </div>
+              ) : (
+                <button className="submit-rating" disabled={!rating} onClick={() => setRatingSubmitted(true)}>
+                  Submit rating <ArrowUpRight size={15} />
                 </button>
               ))}
-            </div>
-            {ratingSubmitted ? (
+            {panel === "login" && (
+              <>
+                <p style={{ color: "#858b9d", fontSize: "11px", lineHeight: 1.6, margin: "14px 0" }}>
+                  Log in as a verified citizen of this ward to rate its representative.
+                </p>
+                <button className="submit-rating" onClick={() => setActiveTab("Login / Signup")}>
+                  Log in or sign up <ArrowUpRight size={15} />
+                </button>
+              </>
+            )}
+            {panel === "other-ward" && (
+              <>
+                <p style={{ color: "#858b9d", fontSize: "11px", lineHeight: 1.6, margin: "14px 0" }}>
+                  Your account is locked to{" "}
+                  {wards.find((item) => item.wardId === user.wardId)?.name ?? user.wardId}, so you can rate only that
+                  ward's representative. This is what stops rating campaigns from outside a ward.
+                </p>
+                {wards.some((item) => item.wardId === user.wardId) && (
+                  <button
+                    className="submit-rating"
+                    onClick={() => setSelectedWard(wards.find((item) => item.wardId === user.wardId).name)}
+                  >
+                    Open my ward's profile <ArrowUpRight size={15} />
+                  </button>
+                )}
+              </>
+            )}
+            {panel === "loading" && (
+              <p style={{ color: "#858b9d", fontSize: "11px", margin: "14px 0" }}>Checking your rating…</p>
+            )}
+            {panel === "rated" && (
               <div className="rating-confirm">
-                <Check size={15} /> Rating saved for Ward{" "}
-                {ward.id.replace("W-", "")}
+                <Check size={15} /> You rated this representative {myRating}/5.
               </div>
-            ) : (
-              <button
-                className="submit-rating"
-                disabled={!rating}
-                onClick={() => setRatingSubmitted(true)}
-              >
-                Submit rating <ArrowUpRight size={15} />
+            )}
+            {panel === "can-rate" && (
+              <button className="submit-rating" disabled={!picked || rateBusy} onClick={submitRating}>
+                {rateBusy ? "Saving…" : "Submit rating"} <ArrowUpRight size={15} />
               </button>
             )}
+            {rateError && <div className="auth-error">{rateError}</div>}
             <small className="rating-note">
               <ShieldCheck size={12} /> Verified residents can rate their own
               ward only.
@@ -2390,9 +3006,6 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
   const [assetType, setAssetType] = useState("Streetlight");
   const [location, setLocation] = useState("");
   const [condition, setCondition] = useState("dead");
-  const demoPublicUrl = reportImage
-    ? `https://nirvasan-demo.s3.ap-south-1.amazonaws.com/reports/2026/09/${reportImage.name.replace(/[^a-z0-9.-]/gi, "-").toLowerCase()}`
-    : "";
 
   return (
     <section className="content-view form-view">
@@ -2419,7 +3032,7 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
               onChange={(event) => setReportImage(event.target.files?.[0] || null)}
             />
           </label>
-          {reportImage && <span className="upload-file-meta">{Math.round(reportImage.size / 1024)} KB · ready for S3 upload</span>}
+          {reportImage && <span className="upload-file-meta">{Math.round(reportImage.size / 1024)} KB · ready to upload</span>}
           <span className="upload-note">
             <ShieldCheck size={13} /> Location metadata checked on upload
           </span>
@@ -2476,9 +3089,9 @@ function ReportView({ reportImage, setReportImage, submitted, setSubmitted }) {
                   {assetType.toUpperCase()} · {condition === "dead" ? "DEAD / MISSING" : "INTERMITTENT"}
                   {location ? ` · ${location.toUpperCase()}` : ""}
                 </small>
-                <b>{demoPublicUrl}</b>
+                <b>Demo only: new-asset reports are not stored yet.</b>
+                <span className="upload-note">To add real photo evidence to an existing asset, use Civic Proof.</span>
               </div>
-              <button className="copy-url" onClick={() => navigator.clipboard?.writeText(demoPublicUrl)}>Copy URL</button>
             </div>
           )}
           <p className="form-footnote">
@@ -2496,8 +3109,121 @@ function ProofView({
   setSelectedAsset,
   submitted,
   setSubmitted,
+  user,
+  setActiveTab,
 }) {
   const [proofType, setProofType] = useState("broken");
+  // With API data, photos are real (stored in S3) and uploads need a ward-locked login.
+  const fromApi = Boolean(selectedAsset.wardId);
+  const panel = proofPanelState({
+    live: authEnabled && fromApi,
+    signedIn: Boolean(user),
+    userWardId: user?.wardId,
+    assetWardId: selectedAsset.wardId,
+  });
+  const [evidenceByAsset, setEvidenceByAsset] = useState({});
+  const [refresh, setRefresh] = useState(0);
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+  const [notice, setNotice] = useState("");
+  const [mineByAsset, setMineByAsset] = useState({});
+  const [reviewing, setReviewing] = useState("");
+  const evidence = evidenceByAsset[selectedAsset.id];
+  const mineIds = mineByAsset[selectedAsset.id];
+  useEffect(() => {
+    if (!fromApi) return undefined;
+    let cancelled = false;
+    const assetId = selectedAsset.id;
+    const save = (result) => !cancelled && setEvidenceByAsset((state) => ({ ...state, [assetId]: result }));
+    fetchEvidence(assetId)
+      .then((items) => save({ items }))
+      .catch((error) => save({ error: error.message }));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAsset.id, fromApi, refresh]);
+  useEffect(() => {
+    if (panel !== "can-upload") return undefined;
+    let cancelled = false;
+    const assetId = selectedAsset.id;
+    getIdToken()
+      .then((token) => fetchMyEvidence(token, assetId))
+      .then((ids) => !cancelled && setMineByAsset((state) => ({ ...state, [assetId]: ids })))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAsset.id, panel, refresh]);
+  const reviewPhoto = async (entry, decision) => {
+    setReviewing(entry.evidence_id);
+    setProblem("");
+    setNotice("");
+    try {
+      const result = await reviewEvidence(await getIdToken(), {
+        asset_id: selectedAsset.id,
+        evidence_id: entry.evidence_id,
+        decision,
+      });
+      if (result.asset_status !== selectedAsset.status) {
+        const updated = { ...selectedAsset, status: result.asset_status };
+        replaceAsset(updated);
+        setSelectedAsset(updated);
+      }
+      setNotice(
+        decision === "confirm" && result.asset_status !== selectedAsset.status
+          ? `${REVIEW_NOTICE.confirm} The asset is now marked ${statusMeta[result.asset_status].label.toLowerCase()}.`
+          : REVIEW_NOTICE[decision],
+      );
+      setRefresh((count) => count + 1);
+    } catch (error) {
+      setProblem(error.message);
+    } finally {
+      setReviewing("");
+    }
+  };
+  const submitProof = async () => {
+    setBusy(true);
+    setProblem("");
+    setNotice("");
+    try {
+      const position = await getPosition();
+      const result = await uploadProof({
+        file,
+        assetId: selectedAsset.id,
+        verdict: proofType === "broken" ? "broken" : "working",
+        idToken: await getIdToken(),
+        position,
+        api: { requestUploadUrl, uploadPhoto, submitEvidence },
+      });
+      setNotice(
+        position
+          ? `Saved: ${locationLabel(result)}.`
+          : "Saved, but your location was not shared, so the photo is labelled 'location not shared'.",
+      );
+      setFile(null);
+      setRefresh((count) => count + 1);
+    } catch (error) {
+      setProblem(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const muted = { color: "#858b9d", fontSize: "11px", lineHeight: 1.6, margin: "10px 0" };
+  const myWardId = user?.wardId;
+  const myWardName = user ? (wards.find((item) => item.wardId === myWardId)?.name ?? myWardId) : "";
+  const wardChoices = [];
+  for (const asset of assets) {
+    let choice = wardChoices.find((item) => item.value === asset.ward);
+    if (!choice) {
+      choice = { value: asset.ward, name: asset.wardName, mine: Boolean(myWardId) && asset.wardId === myWardId, count: 0 };
+      wardChoices.push(choice);
+    }
+    choice.count += 1;
+  }
+  wardChoices.sort((a, b) => Number(b.mine) - Number(a.mine) || a.name.localeCompare(b.name));
+  const wardAssets = assets.filter((asset) => asset.ward === selectedAsset.ward);
+  const myFirstAsset = myWardId ? assets.find((asset) => asset.wardId === myWardId) : null;
   return (
     <section className="content-view proof-view">
       <div className="content-toolbar">
@@ -2510,29 +3236,63 @@ function ProofView({
           </p>
         </div>
         <div className="verified-user">
-          <span className="online-dot" /> Verified citizen · {selectedAsset.wardName}{" "}
-          <BadgeCheck size={15} />
+          {user ? (
+            <>
+              <span className="online-dot" /> Verified citizen · your ward: {myWardName} <BadgeCheck size={15} />
+            </>
+          ) : authEnabled && fromApi ? (
+            <>
+              Not signed in ·{" "}
+              <button type="button" className="link-button" onClick={() => setActiveTab("Login / Signup")}>
+                log in to add evidence
+              </button>
+            </>
+          ) : (
+            <>Demo mode · nothing is saved</>
+          )}
         </div>
       </div>
       <div className="proof-layout">
         <div className="proof-target">
           <div className="proof-target-head">
             <span className="kicker">SELECT TARGET ASSET</span>
-            <select
-              value={selectedAsset.id}
-              onChange={(event) =>
-                setSelectedAsset(
-                  assets.find((asset) => asset.id === event.target.value) ||
-                    selectedAsset,
-                )
-              }
-            >
-              {assets.map((asset) => (
-                <option key={asset.id} value={asset.id}>
-                  {asset.id} · {asset.type}
-                </option>
-              ))}
-            </select>
+            <div className="proof-pickers">
+              <div className="proof-picker">
+                <small>WARD</small>
+                <SelectMenu
+                  ariaLabel="Ward"
+                  className="select-box select-block"
+                  value={selectedAsset.ward}
+                  onChange={(wardKey) => {
+                    const first = assets.find((asset) => asset.ward === wardKey);
+                    if (first) setSelectedAsset(first);
+                  }}
+                  options={wardChoices.map((choice) => ({
+                    value: choice.value,
+                    label: choice.mine ? `${choice.name} · your ward` : choice.name,
+                    hint: `${choice.count} ${choice.count === 1 ? "asset" : "assets"}`,
+                  }))}
+                />
+              </div>
+              <div className="proof-picker">
+                <small>ASSET</small>
+                <SelectMenu
+                  ariaLabel="Target asset"
+                  listMinWidth={560}
+                  className="select-box select-block"
+                  value={selectedAsset.id}
+                  onChange={(id) => setSelectedAsset(assets.find((asset) => asset.id === id) || selectedAsset)}
+                  options={wardAssets.map((asset) => ({
+                    value: asset.id,
+                    label: `${asset.id} · ${asset.label}`,
+                    hint: statusMeta[asset.status].label,
+                  }))}
+                />
+              </div>
+            </div>
+            {myWardId && !myFirstAsset && (
+              <p style={muted}>Your ward ({myWardName}) has no tracked assets yet, so there is nothing to add evidence to.</p>
+            )}
           </div>
           <div className="proof-asset">
             <div className="asset-type-icon">
@@ -2561,30 +3321,79 @@ function ProofView({
             <div className="list-title">
               PHOTO TIMELINE{" "}
               <span>
-                {selectedAsset.photos + (submitted ? 1 : 0)} submissions
+                {fromApi
+                  ? `${evidence?.items?.length ?? 0} citizen photos`
+                  : `${selectedAsset.photos + (submitted ? 1 : 0)} submissions`}
               </span>
             </div>
-            <div className="photo-row">
-              <div className="photo-placeholder dead-photo">
-                <CircleAlert size={20} />
-              </div>
-              <div>
-                <b>Still broken</b>
-                <span>Ward 042 · 18 Sep 2024, 09:21</span>
-              </div>
-              <em>unverified</em>
-            </div>
-            <div className="photo-row">
-              <div className="photo-placeholder">
-                <Check size={20} />
-              </div>
-              <div>
-                <b>Fixed now</b>
-                <span>Ward 042 · 02 Sep 2024, 17:42</span>
-              </div>
-              <em className="verified-em">verified</em>
-            </div>
-            {submitted && (
+            {fromApi && !evidence && <p style={muted}>Loading photos…</p>}
+            {fromApi && evidence?.error && <p style={muted}>Could not load photos: {evidence.error}</p>}
+            {fromApi && evidence?.items?.length === 0 && (
+              <p style={muted}>No citizen photos for this asset yet.</p>
+            )}
+            {fromApi &&
+              evidence?.items?.map((entry) => {
+                const review = reviewState({ panel, entry, mineIds });
+                return (
+                  <div className="photo-row" key={entry.evidence_id}>
+                    <a href={entry.photo_url} target="_blank" rel="noreferrer">
+                      <img
+                        src={entry.photo_url}
+                        alt={entry.verdict === "broken" ? "Photo showing the asset still broken" : "Photo showing the asset fixed"}
+                        style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 5, display: "block" }}
+                      />
+                    </a>
+                    <div>
+                      <b>{entry.verdict === "broken" ? "Still broken" : "Fixed now"}</b>
+                      <span>
+                        {new Date(entry.created_at).toLocaleString("en-GB", {
+                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                        })}{" "}
+                        · {locationLabel(entry)}
+                      </span>
+                      {review === "can-review" && (
+                        <div className="review-actions">
+                          <button disabled={Boolean(reviewing)} onClick={() => reviewPhoto(entry, "confirm")}>
+                            {reviewing === entry.evidence_id ? "Saving…" : "Confirm"}
+                          </button>
+                          <button className="dispute" disabled={Boolean(reviewing)} onClick={() => reviewPhoto(entry, "dispute")}>
+                            Dispute
+                          </button>
+                        </div>
+                      )}
+                      {review === "own" && <span className="review-note">Yours · waits for a second citizen to confirm</span>}
+                    </div>
+                    <em className={entry.status === "verified" ? "verified-em" : entry.status === "disputed" ? "disputed-em" : ""}>
+                      {entry.status}
+                    </em>
+                  </div>
+                );
+              })}
+            {!fromApi && (
+              <>
+                <div className="photo-row">
+                  <div className="photo-placeholder dead-photo">
+                    <CircleAlert size={20} />
+                  </div>
+                  <div>
+                    <b>Still broken</b>
+                    <span>Ward 042 · 18 Sep 2024, 09:21</span>
+                  </div>
+                  <em>unverified</em>
+                </div>
+                <div className="photo-row">
+                  <div className="photo-placeholder">
+                    <Check size={20} />
+                  </div>
+                  <div>
+                    <b>Fixed now</b>
+                    <span>Ward 042 · 02 Sep 2024, 17:42</span>
+                  </div>
+                  <em className="verified-em">verified</em>
+                </div>
+              </>
+            )}
+            {!fromApi && submitted && (
               <div className="photo-row new-photo">
                 <div className="photo-placeholder new">
                   {proofType === "broken" ? <CircleAlert size={20} /> : <Check size={20} />}
@@ -2605,29 +3414,74 @@ function ProofView({
             </div>
             <h3>Add evidence</h3>
             <p>Choose a photo and tell us what you see.</p>
-            <div className="proof-type">
-              <button
-                className={proofType === "broken" ? "choice active" : "choice"}
-                onClick={() => setProofType("broken")}
-              >
-                <CircleAlert size={15} /> Still broken
+            {(panel === "demo" || panel === "can-upload") && (
+              <div className="proof-type">
+                <button
+                  className={proofType === "broken" ? "choice active" : "choice"}
+                  onClick={() => setProofType("broken")}
+                >
+                  <CircleAlert size={15} /> Still broken
+                </button>
+                <button
+                  className={proofType === "fixed" ? "choice active" : "choice"}
+                  onClick={() => setProofType("fixed")}
+                >
+                  <Check size={15} /> Fixed now
+                </button>
+              </div>
+            )}
+            {panel === "demo" && (
+              <button className="primary-action" onClick={() => setSubmitted(true)}>
+                <Upload size={16} /> {submitted ? "Evidence submitted" : "Upload proof"}
               </button>
-              <button
-                className={proofType === "fixed" ? "choice active" : "choice"}
-                onClick={() => setProofType("fixed")}
-              >
-                <Check size={15} /> Fixed now
+            )}
+            {panel === "login" && (
+              <>
+                <p style={muted}>Log in as a verified citizen of {selectedAsset.wardName} to add evidence.</p>
+                <button className="primary-action" onClick={() => setActiveTab("Login / Signup")}>
+                  Log in or sign up
+                </button>
+              </>
+            )}
+            {panel === "other-ward" && (
+              <p style={muted}>
+                Your account is locked to {myWardName}, so you can add evidence only for assets in that ward
+                (you can still look at photos anywhere).
+              </p>
+            )}
+            {panel === "other-ward" && myFirstAsset && (
+              <button className="primary-action" onClick={() => setSelectedAsset(myFirstAsset)}>
+                Show {myWardName} assets
               </button>
-            </div>
-            <button
-              className="primary-action"
-              onClick={() => setSubmitted(true)}
-            >
-              <Upload size={16} />{" "}
-              {submitted ? "Evidence submitted" : "Upload proof"}
-            </button>
+            )}
+            {panel === "can-upload" && (
+              <>
+                <label className="primary-action upload-button">
+                  <ImagePlus size={16} /> {file ? "Replace photo" : "Choose photo"}
+                  <input
+                    key={refresh}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => {
+                      setFile(event.target.files?.[0] ?? null);
+                      setProblem("");
+                      setNotice("");
+                    }}
+                  />
+                </label>
+                {file && <span className="upload-file-meta">{file.name} · {Math.round(file.size / 1024)} KB</span>}
+                <button className="primary-action" disabled={!file || busy} onClick={submitProof}>
+                  <Upload size={16} /> {busy ? "Uploading…" : "Upload proof"}
+                </button>
+              </>
+            )}
+            {problem && <div className="auth-error">{problem}</div>}
+            {notice && <p style={muted}>{notice}</p>}
             <span className="upload-note">
-              <ShieldCheck size={13} /> GPS within 50m of asset required
+              <ShieldCheck size={13} />{" "}
+              {panel === "demo"
+                ? "GPS within 50m of asset required"
+                : "Your distance from the asset is recorded and shown with the photo"}
             </span>
           </div>
           <div className="proof-rules">
@@ -2635,7 +3489,9 @@ function ProofView({
               <ShieldCheck size={16} />
               <b>Two-person verification</b>
               <span>
-                A second citizen or admin must confirm before status changes.
+                {panel === "demo"
+                  ? "A second citizen or admin must confirm before status changes."
+                  : "A second citizen of this ward must confirm a photo before it changes the asset's status. You cannot confirm your own."}
               </span>
             </div>
             <div>
@@ -2655,7 +3511,185 @@ function ProofView({
   );
 }
 
-function AuthView({ mode, setMode }) {
+function AuthView(props) {
+  return authEnabled ? (
+    <CognitoAuthView {...props} />
+  ) : (
+    <DemoAuthView mode={props.mode} setMode={props.setMode} />
+  );
+}
+
+const passwordProblem = (password) =>
+  password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)
+    ? "Password must be at least 8 characters with upper case, lower case and a number."
+    : "";
+
+function AuthVisual() {
+  return (
+    <div className="auth-visual">
+      <span className="kicker">NIRVASAN IDENTITY LAYER</span>
+      <h2>Make your ward<br /><em>countable.</em></h2>
+      <p>Verified residents can report assets, upload civic proof, and rate representatives only within their own ward.</p>
+      <div className="auth-signal"><span className="online-dot" /><b>WARD-LOCKED ACCESS</b><small>ward is chosen once and cannot be changed</small></div>
+    </div>
+  );
+}
+
+function CognitoAuthView({ mode, setMode, user, setUser }) {
+  const [step, setStep] = useState("form");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [apiCheck, setApiCheck] = useState("");
+  const [form, setForm] = useState({ name: "", pincode: "", ward: "", email: "", phone: "", password: "", code: "" });
+  const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  useEffect(() => {
+    if (!user) return undefined;
+    let cancelled = false;
+    getIdToken()
+      .then((token) => fetchMe(token))
+      .then((me) => !cancelled && setApiCheck(`Server confirms ${me.email} · ward ${me.ward_id}`))
+      .catch((problem) => !cancelled && setApiCheck(`Server check failed: ${problem.message}`));
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  if (user) {
+    const ward = wards.find((item) => (item.wardId ?? item.id) === user.wardId);
+    return (
+      <section className="auth-shell">
+        <AuthVisual />
+        <div className="auth-card">
+          <div className="auth-heading">
+            <span className="kicker">SIGNED IN</span>
+            <h3>{user.name}</h3>
+            <p>{user.email}</p>
+          </div>
+          <div className="auth-success">
+            <BadgeCheck size={18} />
+            <div>
+              <b>Ward-locked to {ward ? ward.name : user.wardId}</b>
+              <span>{apiCheck || "Checking with the server…"}</span>
+            </div>
+          </div>
+          <button className="auth-submit" type="button" onClick={() => { signOut(); setUser(null); setStep("form"); }}>
+            Sign out
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const finishSignIn = async () => {
+    setUser(await signIn(form.email, form.password));
+    setForm((current) => ({ ...current, password: "", code: "" }));
+    setStep("form");
+    setNotice("");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    if (step === "form" && mode === "signup") {
+      if (!form.name.trim() || !/^\d{6}$/.test(form.pincode) || !form.ward) {
+        return setError("Enter your name, a 6-digit pincode, and select your ward.");
+      }
+      if (!toE164(form.phone)) return setError("Enter a valid 10-digit mobile number.");
+      if (passwordProblem(form.password)) return setError(passwordProblem(form.password));
+      if (wards.some((item) => !item.wardId)) {
+        return setError("The ward list is still loading from the server. Try again in a moment.");
+      }
+    }
+    setBusy(true);
+    try {
+      if (step === "confirm") {
+        await confirmSignUp(form.email, form.code);
+        await finishSignIn();
+      } else if (mode === "signup") {
+        await signUp({ ...form, wardId: form.ward });
+        setStep("confirm");
+        setNotice(`We emailed a 6-digit code to ${form.email}. Enter it to finish.`);
+      } else {
+        await finishSignIn();
+      }
+    } catch (problem) {
+      if (problem?.code === "UserNotConfirmedException") {
+        await resendCode(form.email).catch(() => {});
+        setStep("confirm");
+        setNotice("Your email is not confirmed yet. We sent a new code.");
+      } else {
+        setError(friendlyError(problem));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resend = async () => {
+    setError("");
+    try {
+      await resendCode(form.email);
+      setNotice(`A new code was sent to ${form.email}.`);
+    } catch (problem) {
+      setError(friendlyError(problem));
+    }
+  };
+
+  const confirming = step === "confirm";
+  return (
+    <section className="auth-shell">
+      <AuthVisual />
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <div className="auth-tabs">
+          <button type="button" disabled={confirming} className={mode === "signup" ? "auth-tab active" : "auth-tab"} onClick={() => setMode("signup")}>Create account</button>
+          <button type="button" disabled={confirming} className={mode === "login" ? "auth-tab active" : "auth-tab"} onClick={() => setMode("login")}>Log in</button>
+        </div>
+        <div className="auth-heading">
+          <span className="kicker">{confirming ? "CONFIRM YOUR EMAIL" : mode === "signup" ? "NEW CITIZEN PROFILE" : "WELCOME BACK"}</span>
+          <h3>{confirming ? "Enter the code we emailed." : mode === "signup" ? "Enter your ward identity." : "Continue your civic work."}</h3>
+          <p>{mode === "signup" ? "Your ward and pincode are locked once your account is created." : "Log in with your email and password."}</p>
+        </div>
+        {confirming ? (
+          <label>Confirmation code<input value={form.code} onChange={update("code")} required inputMode="numeric" maxLength="6" placeholder="123456" /></label>
+        ) : (
+          <>
+            {mode === "signup" && (
+              <>
+                <label>Full name<input value={form.name} onChange={update("name")} required placeholder="e.g. Aditi Sharma" /></label>
+                <div className="auth-row">
+                  <label>Pincode<input value={form.pincode} onChange={update("pincode")} required inputMode="numeric" maxLength="6" placeholder="110019" /></label>
+                  <label>Ward
+                    <select value={form.ward} onChange={update("ward")} required>
+                      <option value="">Select ward</option>
+                      {wards.map((ward) => <option key={ward.id} value={ward.wardId ?? ward.id}>{ward.id} · {ward.name}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </>
+            )}
+            <label>Email address<input value={form.email} onChange={update("email")} required type="email" autoComplete="email" placeholder="you@example.com" /></label>
+            {mode === "signup" && (
+              <label>Phone number<div className="phone-input"><span>+91</span><input value={form.phone} onChange={update("phone")} required type="tel" placeholder="98765 43210" /></div></label>
+            )}
+            <label>Password<input value={form.password} onChange={update("password")} required type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder="At least 8 characters" /></label>
+          </>
+        )}
+        {notice && <p style={{ color: "#858b9d", fontSize: "11px", lineHeight: 1.6 }}>{notice}</p>}
+        {error && <div className="auth-error">{error}</div>}
+        <button className="auth-submit" type="submit" disabled={busy}>
+          {busy ? "Please wait…" : confirming ? "Confirm and sign in" : mode === "signup" ? "Create account" : "Log in"}
+          <ArrowUpRight size={16} />
+        </button>
+        {confirming && <button type="button" className="secondary-action" onClick={resend}>Send a new code</button>}
+        <div className="auth-foot"><ShieldCheck size={14} /><span>We never display your identity publicly. Only your ward and timestamp appear on reports.</span></div>
+      </form>
+    </section>
+  );
+}
+
+function DemoAuthView({ mode, setMode }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ name: "", pincode: "", ward: "", email: "", phone: "" });

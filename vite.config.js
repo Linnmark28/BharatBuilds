@@ -43,4 +43,8 @@ function officerScraperApi() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), officerScraperApi()],
+  server: {
+    // `sam build` writes locked temp files under backend/, which crashed the watcher on Windows.
+    watch: { ignored: ['**/backend/**', '**/data/seed/**'] },
+  },
 })

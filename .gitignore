@@ -34,3 +34,7 @@ dist-ssr
 .aws-sam/
 
 nirvasan-dist.zip
+
+# Python caches
+__pycache__/
+*.pyc

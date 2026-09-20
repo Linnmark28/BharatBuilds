@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Nirvasan API - an HTTP API and one Python Lambda over the existing DynamoDB tables, with Cognito login.
+
+Parameters:
+  TablePrefix:
+    Type: String
+    Default: nirvasan-
+    Description: Prefix of the DynamoDB tables created by hand in Phase 1.
+  EvidenceBucket:
+    Type: String
+    Default: anv-nirvasan
+    Description: Existing private S3 bucket holding citizen photos (created by hand in Phase 1).
+  StrictLocation:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: "true rejects evidence taken more than 50 m from the asset; false keeps it and labels it not verified."
+  NarrativeModel:
+    Type: String
+    Default: apac.amazon.nova-lite-v1:0
+    Description: Bedrock inference profile that writes the ward summaries (Amazon Nova Lite).
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 256
+    Timeout: 15
+
+Resources:
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/nirvasan-api
+      RetentionInDays: 7
+
+  # News reports (headline, source, link, date only). Items may carry expires_at (epoch seconds) to age out.
+  SignalsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${TablePrefix}signals"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: signal_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: signal_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  # Custom attributes cannot be changed or removed after creation, and editing
+  # the Schema below replaces the whole pool (deleting its users).
+  # ward_id and pincode are immutable: set once at sign-up, so a citizen cannot
+  # move themselves to another ward afterwards.
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: nirvasan-users
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      MfaConfiguration: "OFF"
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: name
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: ward_id
+          AttributeDataType: String
+          Mutable: false
+          StringAttributeConstraints:
+            MinLength: "1"
+            MaxLength: "40"
+        - Name: pincode
+          AttributeDataType: String
+          Mutable: false
+          StringAttributeConstraints:
+            MinLength: "6"
+            MaxLength: "6"
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: nirvasan-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      ReadAttributes: [email, email_verified, name, phone_number, "custom:ward_id", "custom:pincode"]
+      WriteAttributes: [email, name, phone_number, "custom:ward_id", "custom:pincode"]
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - http://localhost:5173
+          - https://main.d1dpb1jw4r1tmw.amplifyapp.com
+        AllowMethods: [GET, POST, PUT, OPTIONS]
+        AllowHeaders: [Content-Type, Authorization]
+        MaxAge: 3600
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 25
+      Auth:
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: nirvasan-api
+      CodeUri: src/api/
+      Handler: app.lambda_handler
+      LoggingConfig:
+        LogGroup: !Ref ApiLogGroup
+      Environment:
+        Variables:
+          WARDS_TABLE: !Sub "${TablePrefix}wards"
+          ASSETS_TABLE: !Sub "${TablePrefix}assets"
+          POLITICIANS_TABLE: !Sub "${TablePrefix}politicians"
+          OFFICERS_TABLE: !Sub "${TablePrefix}officers"
+          RATINGS_TABLE: !Sub "${TablePrefix}ratings"
+          EVIDENCE_TABLE: !Sub "${TablePrefix}evidence"
+          EVIDENCE_BUCKET: !Ref EvidenceBucket
+          STRICT_LOCATION: !Ref StrictLocation
+          NARRATIVE_MODEL: !Ref NarrativeModel
+          SIGNALS_TABLE: !Ref SignalsTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}wards"
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}assets"
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}politicians"
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}officers"
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}ratings"
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${TablePrefix}evidence"
+        - DynamoDBReadPolicy:
+            TableName: !Ref SignalsTable
+        - Statement:
+            # Writes are limited to: new ratings and evidence rows, and the counters
+            # on wards and assets. The read-only tables above stay read-only.
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource:
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePrefix}ratings"
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePrefix}evidence"
+            - Effect: Allow
+              Action: dynamodb:UpdateItem
+              Resource:
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePrefix}wards"
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePrefix}assets"
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TablePrefix}evidence"
+                - !GetAtt SignalsTable.Arn
+            # Photos live under evidence/ only. The signed upload runs with this role's rights.
+            - Effect: Allow
+              Action: [s3:PutObject, s3:GetObject]
+              Resource: !Sub "arn:aws:s3:::${EvidenceBucket}/evidence/*"
+            # One model only. An APAC inference profile may run the request in any APAC region,
+            # so the underlying foundation-model ARN is listed for every region.
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${NarrativeModel}"
+                - "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0"
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        Me:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /me
+            Method: GET
+            Auth:
+              Authorizer: CognitoJwt
+        RateRepresentative:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /ratings
+            Method: POST
+            Auth:
+              Authorizer: CognitoJwt
+        MyRating:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /ratings/mine
+            Method: GET
+            Auth:
+              Authorizer: CognitoJwt
+        EvidenceUploadUrl:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /evidence/upload-url
+            Method: POST
+            Auth:
+              Authorizer: CognitoJwt
+        AddEvidence:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /evidence
+            Method: POST
+            Auth:
+              Authorizer: CognitoJwt
+        ReviewEvidence:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /evidence/review
+            Method: POST
+            Auth:
+              Authorizer: CognitoJwt
+        MyEvidence:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /evidence/mine
+            Method: GET
+            Auth:
+              Authorizer: CognitoJwt
+        ReviewSignal:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /signals/{signal_id}/review
+            Method: POST
+            Auth:
+              Authorizer: CognitoJwt
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the API (VITE_API_BASE_URL)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  UserPoolId:
+    Description: Cognito user pool id (VITE_COGNITO_USER_POOL_ID)
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito app client id (VITE_COGNITO_CLIENT_ID)
+    Value: !Ref UserPoolClient
