@@ -1,0 +1,524 @@
+[
+  {
+    "ward_id": "DM-155",
+    "source": "demo",
+    "label": "W-042 Lajpat Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-192",
+    "source": "demo",
+    "label": "W-043 Greater Kailash",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-196",
+    "source": "demo",
+    "label": "W-044 Kalkaji",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-045",
+    "source": "demo",
+    "label": "W-045 Saket",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-161",
+    "source": "demo",
+    "label": "W-046 Malviya Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-167",
+    "source": "demo",
+    "label": "W-047 R K Puram",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-164",
+    "source": "demo",
+    "label": "W-048 Hauz Khas",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-166",
+    "source": "demo",
+    "label": "W-049 Munirka",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-171",
+    "source": "demo",
+    "label": "W-050 Vasant Kunj",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-190",
+    "source": "demo",
+    "label": "W-051 Chittaranjan Park",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-052",
+    "source": "demo",
+    "label": "W-052 Connaught Place",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-91",
+    "source": "demo",
+    "label": "W-053 Karol Bagh",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-054",
+    "source": "demo",
+    "label": "W-054 Civil Lines",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-72",
+    "source": "demo",
+    "label": "W-055 Model Town",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-21",
+    "source": "demo",
+    "label": "W-056 Rohini",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-53",
+    "source": "demo",
+    "label": "W-057 Pitampura",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-117",
+    "source": "demo",
+    "label": "W-058 Janakpuri",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-059",
+    "source": "demo",
+    "label": "W-059 Dwarka",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-138",
+    "source": "demo",
+    "label": "W-060 Najafgarh",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-237",
+    "source": "demo",
+    "label": "W-061 Shahdara",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-222",
+    "source": "demo",
+    "label": "W-062 Laxmi Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-209",
+    "source": "demo",
+    "label": "W-063 Mayur Vihar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-206",
+    "source": "demo",
+    "label": "W-064 Okhla",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-95",
+    "source": "demo",
+    "label": "W-065 Patel Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-149",
+    "source": "demo",
+    "label": "W-066 Rajinder Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-123",
+    "source": "demo",
+    "label": "W-067 Vikaspuri",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-114",
+    "source": "demo",
+    "label": "W-068 Tilak Nagar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-55",
+    "source": "demo",
+    "label": "W-069 Shalimar Bagh",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-070",
+    "source": "demo",
+    "label": "W-070 Wazirpur",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-7",
+    "source": "demo",
+    "label": "W-071 Burari",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-268",
+    "source": "demo",
+    "label": "W-072 Mustafabad",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-228",
+    "source": "demo",
+    "label": "W-073 Preet Vihar",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-211",
+    "source": "demo",
+    "label": "W-074 Trilokpuri",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DEMO-W-075",
+    "source": "demo",
+    "label": "W-075 Jangpura",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-197",
+    "source": "demo",
+    "label": "W-076 Tughlakabad",
+    "method": "alias"
+  },
+  {
+    "ward_id": "DM-8",
+    "source": "myneta",
+    "label": "10-JHARODA",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-10",
+    "source": "myneta",
+    "label": "11-TIMARPUR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-9",
+    "source": "myneta",
+    "label": "12-MALKA GANJ",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-11",
+    "source": "myneta",
+    "label": "13-MUKHERJEE NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-152",
+    "source": "myneta",
+    "label": "139-NARAINA",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-151",
+    "source": "myneta",
+    "label": "140-INDER PURI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-149",
+    "source": "myneta",
+    "label": "141-RAJINDER NAGAR",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-166",
+    "source": "myneta",
+    "label": "151-MUNIRKA",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-167",
+    "source": "myneta",
+    "label": "152-R.K. PURAM",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-165",
+    "source": "myneta",
+    "label": "153-VASANT VIHAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-190",
+    "source": "myneta",
+    "label": "171-CHITARANJAN PARK",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-189",
+    "source": "myneta",
+    "label": "172-CHIRAG DELHI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-212",
+    "source": "myneta",
+    "label": "190-NEW ASHOK NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-209",
+    "source": "myneta",
+    "label": "191-MAYUR VIHAR PHASE-I",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-211",
+    "source": "myneta",
+    "label": "192-TRILOKPURI",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-215",
+    "source": "myneta",
+    "label": "193-KONDLI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-216",
+    "source": "myneta",
+    "label": "194-GHAROLI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-213",
+    "source": "myneta",
+    "label": "195-KALYANPURI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-219",
+    "source": "myneta",
+    "label": "196-MAYUR VIHAR PHASE-II",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-220",
+    "source": "myneta",
+    "label": "197-PATPAR GANJ",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-217",
+    "source": "myneta",
+    "label": "198-VINOD NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-218",
+    "source": "myneta",
+    "label": "199-MANDAWAII",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-224",
+    "source": "myneta",
+    "label": "200-PANDAV NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-201",
+    "source": "myneta",
+    "label": "201-LALITA PARK",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-223",
+    "source": "myneta",
+    "label": "202-SHAKARPUR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-222",
+    "source": "myneta",
+    "label": "203-LAXMI NAGAR",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-232",
+    "source": "myneta",
+    "label": "208-ANARKALI",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-209",
+    "source": "myneta",
+    "label": "209-JAGAT PURI",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-230",
+    "source": "myneta",
+    "label": "210-GEETA COLONY",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-229",
+    "source": "myneta",
+    "label": "211-KRISHNA NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-234",
+    "source": "myneta",
+    "label": "212-GANDHI NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-213",
+    "source": "myneta",
+    "label": "213-SHASTRI PARK",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-235",
+    "source": "myneta",
+    "label": "214-AZAD NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-7",
+    "source": "myneta",
+    "label": "6-BURARI",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "MN-7",
+    "source": "myneta",
+    "label": "7-KADIPUR",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-73",
+    "source": "myneta",
+    "label": "70-SHASTRI NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-75",
+    "source": "myneta",
+    "label": "71-KISHAN GANJ",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-72",
+    "source": "myneta",
+    "label": "72-SADAR BAZAR",
+    "method": "none"
+  },
+  {
+    "ward_id": "DEMO-W-054",
+    "source": "myneta",
+    "label": "73-CIVIL LINES",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-80",
+    "source": "myneta",
+    "label": "74-CHANDNI CHOWK",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-79",
+    "source": "myneta",
+    "label": "75-JAMA MASJID",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-76",
+    "source": "myneta",
+    "label": "76-CHANDANI MAHAL",
+    "method": "none"
+  },
+  {
+    "ward_id": "MN-77",
+    "source": "myneta",
+    "label": "77-DELHI GATE",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-83",
+    "source": "myneta",
+    "label": "78-BAZAR SITA RAM",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-86",
+    "source": "myneta",
+    "label": "79-BALLIMARAN",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-6",
+    "source": "myneta",
+    "label": "8-MUKUNDPUR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-247",
+    "source": "myneta",
+    "label": "80-RAM NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-81",
+    "source": "myneta",
+    "label": "81-QURAISH NAGAR",
+    "method": "none"
+  },
+  {
+    "ward_id": "DM-89",
+    "source": "myneta",
+    "label": "82-PAHAR GANJ",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "DM-91",
+    "source": "myneta",
+    "label": "83-KAROI BAGH",
+    "method": "demo-name"
+  },
+  {
+    "ward_id": "DM-92",
+    "source": "myneta",
+    "label": "84-DEV NAGAR",
+    "method": "datameet-name"
+  },
+  {
+    "ward_id": "MN-9",
+    "source": "myneta",
+    "label": "9-SANT NAGAR",
+    "method": "none"
+  }
+]
